@@ -48,20 +48,20 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])
         ->name('login');
     Route::post('login', [AuthController::class, 'login']);
-    
+
     // Registration routes for different roles
     Route::get('register', [AuthController::class, 'createFarmer'])
         ->name('register');
     Route::post('register', [AuthController::class, 'storeFarmer']);
-    
+
     Route::get('register/doctor', [AuthController::class, 'createDoctor'])
         ->name('register.doctor');
     Route::post('register/doctor', [AuthController::class, 'storeDoctor']);
-    
+
     Route::get('register/shop', [AuthController::class, 'createShop'])
         ->name('register.shop');
     Route::post('register/shop', [AuthController::class, 'storeShop']);
-    
+
     // Password reset
     Route::get('forgot-password', [AuthController::class, 'forgotPassword'])
         ->name('password.request');
@@ -78,18 +78,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Main dashboard redirect
     Route::get('/dashboard', function () {
         $user = \Illuminate\Support\Facades\Auth::user();
-        
+
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         } elseif ($user->role === 'doctor') {
             return redirect()->route('doctor.dashboard');
         } elseif ($user->role === 'shop') {
-            return redirect()->route('shop.products.index');
+            return redirect()->route('shop.dashboard');
         } else {  // Farmer or other roles
             return redirect()->route('farmer.home');
         }
     })->name('dashboard');
-    
+
     // Common authenticated routes
     Route::get('/profile', [MainProfileController::class, 'edit'])
         ->name('profile.edit');
@@ -123,14 +123,27 @@ Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('
 // Shop Routes
 Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'shopDashboard'])->name('dashboard');
-    Route::resource('products', ProductController::class);
+
+    // Ubah dari resource route menjadi manual route dengan prefix 'manageproduct'
+    Route::prefix('manageproduct')->name('products.')->group(function () {
+        Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::get('/create', [ProductController::class, 'create'])->name('create');
+        Route::post('/', [ProductController::class, 'store'])->name('store');
+        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
+        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
+        Route::put('/{product}', [ProductController::class, 'update'])->name('update');
+        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+    });
+
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::patch('/transactions/{transaction}/update-status', [TransactionController::class, 'updateStatus'])->name('transactions.update-status');
+
     Route::get('/history', [ShopHistoryController::class, 'index'])->name('history');
     Route::get('/profile', [ShopProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ShopProfileController::class, 'update'])->name('profile.update');
 });
+
 
 // Farmer Routes
 Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('farmer.')->group(function () {
@@ -159,4 +172,4 @@ Route::post('logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

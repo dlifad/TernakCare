@@ -11,67 +11,45 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the products.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Inertia\Response
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
-    
+
         if (!$user || !$user->shop) {
-            // Redirect ke halaman pendaftaran toko atau halaman error
-            return redirect()->route('register.shop')->with('error', 'Anda belum memiliki toko. Silakan daftar sebagai toko terlebih dahulu.');
+            return redirect()->route('register.shop')->with('error', 'Anda belum memiliki toko. Silakan daftar terlebih dahulu.');
         }
-        
+
         $query = Product::where('shop_id', $user->shop->id);
-        
-        $query = Product::where('shop_id', Auth::user()->shop->id);
-        
-        // Search by name if provided
-        if ($request->has('search')) {
+
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
-        
-        // Filter by category if provided
-        if ($request->has('category') && $request->category !== 'all') {
+
+        if ($request->filled('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
         }
-        
-        // Sort products
-        $sortField = $request->input('sort_field', 'created_at');
-        $sortDirection = $request->input('sort_direction', 'desc');
-        $query->orderBy($sortField, $sortDirection);
-        
+
+        $query->orderBy(
+            $request->input('sort_field', 'created_at'),
+            $request->input('sort_direction', 'desc')
+        );
+
         $products = $query->paginate(12)->withQueryString();
-        
-        return Inertia::render('Shop/Products/Index', [
+
+        return Inertia::render('Shop/ManageProduct/Index', [
             'products' => $products,
             'filters' => $request->only(['search', 'category', 'sort_field', 'sort_direction']),
             'categories' => $this->getProductCategories()
         ]);
     }
 
-    /**
-     * Show the form for creating a new product.
-     *
-     * @return \Inertia\Response
-     */
     public function create()
     {
-        return Inertia::render('Shop/Products/Create', [
+        return Inertia::render('Shop/ManageProduct/Create', [
             'categories' => $this->getProductCategories()
         ]);
     }
 
-    /**
-     * Store a newly created product in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -80,179 +58,95 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category' => 'required|string|max:100',
-            'image' => 'required|image|max:2048', // Max 2MB
+            'image' => 'required|image|max:2048',
             'status' => 'required|in:available,out_of_stock',
             'weight' => 'nullable|numeric|min:0',
             'dimensions' => 'nullable|string|max:100',
         ]);
-        
-        // Handle product image upload
+
         $imagePath = $request->file('image')->store('product-images', 'public');
-        
-        // Create product
-        Product::create([
+
+        Product::create(array_merge($request->only([
+            'name', 'description', 'price', 'stock', 'category', 'status', 'weight', 'dimensions'
+        ]), [
             'shop_id' => Auth::user()->shop->id,
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'category' => $request->category,
-            'image' => $imagePath,
-            'status' => $request->status,
-            'weight' => $request->weight,
-            'dimensions' => $request->dimensions,
-        ]);
-        
-        return redirect()->route('shop.products.index')->with('message', 'Product created successfully');
+            'image' => $imagePath
+        ]));
+
+        return redirect()->route('shop.manage-products.index')->with('message', 'Produk berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified product.
-     *
-     * @param  \App\Models\Product  $product
-     * @return \Inertia\Response
-     */
-    public function show(Product $product)
-    {
-        // Check if the product belongs to the authenticated shop
-        if ($product->shop_id !== Auth::user()->shop->id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        return Inertia::render('Shop/Products/Show', [
-            'product' => $product
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified product.
-     *
-     * @param  \App\Models\Product  $product
-     * @return \Inertia\Response
-     */
     public function edit(Product $product)
     {
-        // Check if the product belongs to the authenticated shop
-        if ($product->shop_id !== Auth::user()->shop->id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        return Inertia::render('Shop/Products/Edit', [
+        $this->authorizeProduct($product);
+
+        return Inertia::render('Shop/ManageProduct/Edit', [
             'product' => $product,
             'categories' => $this->getProductCategories()
         ]);
     }
 
-    /**
-     * Update the specified product in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(Request $request, Product $product)
     {
-        // Check if the product belongs to the authenticated shop
-        if ($product->shop_id !== Auth::user()->shop->id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
+        $this->authorizeProduct($product);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category' => 'required|string|max:100',
-            'image' => 'nullable|image|max:2048', // Max 2MB
+            'image' => 'nullable|image|max:2048',
             'status' => 'required|in:available,out_of_stock',
             'weight' => 'nullable|numeric|min:0',
             'dimensions' => 'nullable|string|max:100',
         ]);
-        
-        // Handle product image upload
+
         if ($request->hasFile('image')) {
-            // Delete old image if exists
             if ($product->image && Storage::disk('public')->exists($product->image)) {
                 Storage::disk('public')->delete($product->image);
             }
-            
-            $imagePath = $request->file('image')->store('product-images', 'public');
-            $product->image = $imagePath;
+            $product->image = $request->file('image')->store('product-images', 'public');
         }
-        
-        // Update product
-        $product->update([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'category' => $request->category,
-            'status' => $request->status,
-            'weight' => $request->weight,
-            'dimensions' => $request->dimensions,
-        ]);
-        
-        return redirect()->route('shop.products.index')->with('message', 'Product updated successfully');
+
+        $product->update($request->only([
+            'name', 'description', 'price', 'stock', 'category', 'status', 'weight', 'dimensions'
+        ]));
+
+        return redirect()->route('shop.manage-products.index')->with('message', 'Produk berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified product from storage.
-     *
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function destroy(Product $product)
     {
-        // Check if the product belongs to the authenticated shop
-        if ($product->shop_id !== Auth::user()->shop->id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        // Delete product image if exists
+        $this->authorizeProduct($product);
+
         if ($product->image && Storage::disk('public')->exists($product->image)) {
             Storage::disk('public')->delete($product->image);
         }
-        
+
         $product->delete();
-        
-        return redirect()->route('shop.products.index')->with('message', 'Product deleted successfully');
+
+        return redirect()->route('shop.manage-products.index')->with('message', 'Produk berhasil dihapus.');
     }
 
-    /**
-     * Update product stock.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function updateStock(Request $request, Product $product)
     {
-        // Check if the product belongs to the authenticated shop
-        if ($product->shop_id !== Auth::user()->shop->id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
+        $this->authorizeProduct($product);
+
         $request->validate([
             'stock' => 'required|integer|min:0',
         ]);
-        
+
         $product->update([
             'stock' => $request->stock,
             'status' => $request->stock > 0 ? 'available' : 'out_of_stock',
         ]);
-        
-        return back()->with('message', 'Product stock updated successfully');
+
+        return back()->with('message', 'Stok produk berhasil diperbarui.');
     }
 
-    /**
-     * Get list of product categories.
-     *
-     * @return array
-     */
     private function getProductCategories()
     {
-        // This would typically come from a database table, but for simplicity,
-        // we're using a hardcoded list of common livestock product categories
         return [
             'feed' => 'Feed & Nutrition',
             'medicine' => 'Medicine & Health',
@@ -262,5 +156,12 @@ class ProductController extends Controller
             'care' => 'Animal Care Products',
             'other' => 'Other',
         ];
+    }
+
+    private function authorizeProduct(Product $product)
+    {
+        if ($product->shop_id !== Auth::user()->shop->id) {
+            abort(403, 'Akses tidak diizinkan.');
+        }
     }
 }
