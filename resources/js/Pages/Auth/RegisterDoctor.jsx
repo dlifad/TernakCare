@@ -11,10 +11,8 @@ export default function RegisterDoctor() {
         password_confirmation: '',
         role: 'doctor', // Role dokter hewan
         license_number: '',
-        specialization: '',
         practice_address: '',
         phone_number: '',
-        education: '',
         years_experience: '',
     });
     
@@ -138,49 +136,6 @@ export default function RegisterDoctor() {
                         />
                         {errors.license_number && (
                             <p className="text-xs text-danger mt-1">{errors.license_number}</p>
-                        )}
-                    </div>
-                    
-                    <div className="mb-4">
-                        <label htmlFor="specialization" className="block text-sm font-medium text-neutral-dark mb-1">
-                            Spesialisasi
-                        </label>
-                        <select
-                            id="specialization"
-                            value={data.specialization}
-                            onChange={(e) => setData('specialization', e.target.value)}
-                            className="w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50"
-                            required
-                        >
-                            <option value="">Pilih Spesialisasi</option>
-                            <option value="umum">Dokter Hewan Umum</option>
-                            <option value="sapi">Spesialis Sapi</option>
-                            <option value="unggas">Spesialis Unggas</option>
-                            <option value="kambing">Spesialis Kambing</option>
-                            <option value="kucing">Spesialis Kucing</option>
-                            <option value="anjing">Spesialis Anjing</option>
-                            <option value="lainnya">Lainnya</option>
-                        </select>
-                        {errors.specialization && (
-                            <p className="text-xs text-danger mt-1">{errors.specialization}</p>
-                        )}
-                    </div>
-                    
-                    <div className="mb-4">
-                        <label htmlFor="education" className="block text-sm font-medium text-neutral-dark mb-1">
-                            Pendidikan Terakhir
-                        </label>
-                        <input
-                            id="education"
-                            type="text"
-                            value={data.education}
-                            onChange={(e) => setData('education', e.target.value)}
-                            className="w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50"
-                            placeholder="Contoh: Dokter Hewan - Universitas X"
-                            required
-                        />
-                        {errors.education && (
-                            <p className="text-xs text-danger mt-1">{errors.education}</p>
                         )}
                     </div>
                     

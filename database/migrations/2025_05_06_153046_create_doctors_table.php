@@ -13,13 +13,19 @@ return new class extends Migration
     {
         Schema::create('doctors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('specialty')->nullable();
-            $table->text('bio')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('license_number')->unique();
+            $table->string('specialization');
+            $table->text('practice_address');
+            $table->string('phone_number');
+            $table->string('education');
+            $table->integer('years_experience')->default(0);
+            $table->enum('status', ['pending', 'verified', 'rejected'])->default('pending');
             $table->string('profile_photo')->nullable();
-            $table->string('license_number')->nullable();
-            $table->decimal('consultation_fee', 10, 2)->default(0);
-            $table->boolean('is_available')->default(true);
+            $table->text('about')->nullable();
+            $table->decimal('consultation_fee', 10, 2)->nullable();
+            $table->boolean('is_available_online')->default(false);
+            $table->json('working_hours')->nullable();
             $table->timestamps();
         });
     }

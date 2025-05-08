@@ -213,7 +213,7 @@ export default function Welcome({ auth }) {
                                     Bergabunglah sebagai dokter hewan profesional dan bantu peternak di seluruh Indonesia 
                                     dengan layanan konsultasi terbaik.
                                 </p>
-                                <Link href={route('register')}>
+                                <Link href={route('register.doctor')}>
                                     <Button variant="primary">Daftar Sebagai Dokter</Button>
                                 </Link>
                             </div>
@@ -224,7 +224,7 @@ export default function Welcome({ auth }) {
                                 <p className="text-neutral mb-6">
                                     Perluas jangkauan penjualan produk peternakan Anda dengan bergabung sebagai mitra toko di platform kami.
                                 </p>
-                                <Link href={route('register')}>
+                                <Link href={route('register.shop')}>
                                     <Button variant="primary">Daftar Sebagai Toko</Button>
                                 </Link>
                             </div>

@@ -74,9 +74,7 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone_number' => 'required|string|max:20',
             'license_number' => 'required|string|max:255|unique:doctors',
-            'specialization' => 'required|string|max:100',
             'practice_address' => 'required|string|max:500',
-            'education' => 'required|string|max:255',
             'years_experience' => 'required|integer|min:0',
         ]);
 
@@ -90,10 +88,7 @@ class AuthController extends Controller
         Doctor::create([
             'user_id' => $user->id,
             'license_number' => $request->license_number,
-            'specialization' => $request->specialization,
             'practice_address' => $request->practice_address,
-            'phone_number' => $request->phone_number,
-            'education' => $request->education,
             'years_experience' => $request->years_experience,
             'status' => 'pending', // Status default, menunggu verifikasi admin
         ]);
@@ -119,8 +114,6 @@ class AuthController extends Controller
             'shop_phone' => 'required|string|max:20',
             'shop_address' => 'required|string|max:500',
             'shop_description' => 'required|string|max:1000',
-            'business_license' => 'required|string|max:100',
-            'shop_type' => 'required|string|max:100',
         ]);
 
         $user = User::create([
@@ -136,8 +129,6 @@ class AuthController extends Controller
             'shop_phone' => $request->shop_phone,
             'shop_address' => $request->shop_address,
             'shop_description' => $request->shop_description,
-            'business_license' => $request->business_license,
-            'shop_type' => $request->shop_type,
             'owner_id_number' => $request->owner_id_number,
             'status' => 'pending', // Status default, menunggu verifikasi admin
         ]);

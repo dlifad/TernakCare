@@ -20,8 +20,6 @@ class Shop extends Model
         'shop_phone',
         'shop_address',
         'shop_description',
-        'business_license',
-        'shop_type',
         'owner_id_number',
         'status',
         'shop_logo',

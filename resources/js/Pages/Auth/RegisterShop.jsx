@@ -14,8 +14,6 @@ export default function RegisterShop() {
         shop_phone: '',
         shop_address: '',
         shop_description: '',
-        business_license: '',
-        shop_type: '',
         owner_id_number: '',
     });
     
@@ -143,30 +141,6 @@ export default function RegisterShop() {
                     </div>
                     
                     <div className="mb-4">
-                        <label htmlFor="shop_type" className="block text-sm font-medium text-neutral-dark mb-1">
-                            Jenis Toko
-                        </label>
-                        <select
-                            id="shop_type"
-                            value={data.shop_type}
-                            onChange={(e) => setData('shop_type', e.target.value)}
-                            className="w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50"
-                            required
-                        >
-                            <option value="">Pilih Jenis Toko</option>
-                            <option value="pakan">Pakan Ternak</option>
-                            <option value="obat">Obat & Vitamin</option>
-                            <option value="peralatan">Peralatan & Kandang</option>
-                            <option value="bibit">Bibit Ternak</option>
-                            <option value="umum">Toko Peternakan Umum</option>
-                            <option value="lainnya">Lainnya</option>
-                        </select>
-                        {errors.shop_type && (
-                            <p className="text-xs text-danger mt-1">{errors.shop_type}</p>
-                        )}
-                    </div>
-                    
-                    <div className="mb-4">
                         <label htmlFor="shop_phone" className="block text-sm font-medium text-neutral-dark mb-1">
                             Nomor Telepon Toko
                         </label>
@@ -218,22 +192,7 @@ export default function RegisterShop() {
                         )}
                     </div>
                     
-                    <div className="mb-4">
-                        <label htmlFor="business_license" className="block text-sm font-medium text-neutral-dark mb-1">
-                            Nomor SIUP / NIB
-                        </label>
-                        <input
-                            id="business_license"
-                            type="text"
-                            value={data.business_license}
-                            onChange={(e) => setData('business_license', e.target.value)}
-                            className="w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50"
-                            required
-                        />
-                        {errors.business_license && (
-                            <p className="text-xs text-danger mt-1">{errors.business_license}</p>
-                        )}
-                    </div>
+  
                 </div>
                 
                 <Button

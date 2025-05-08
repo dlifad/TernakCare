@@ -13,12 +13,20 @@ return new class extends Migration
     {
         Schema::create('shops', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('shop_name');
-            $table->text('description')->nullable();
-            $table->string('logo')->nullable();
-            $table->string('address')->nullable();
-            $table->string('phone')->nullable();
+            $table->string('shop_phone');
+            $table->text('shop_address');
+            $table->text('shop_description');
+            $table->string('business_license');
+            $table->string('shop_type');
+            $table->string('owner_id_number');
+            $table->enum('status', ['pending', 'verified', 'rejected'])->default('pending');
+            $table->string('shop_logo')->nullable();
+            $table->string('shop_banner')->nullable();
+            $table->json('delivery_options')->nullable();
+            $table->json('payment_methods')->nullable();
+            $table->json('operating_hours')->nullable();
             $table->timestamps();
         });
     }

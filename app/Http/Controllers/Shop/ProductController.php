@@ -19,6 +19,15 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
+    
+        if (!$user || !$user->shop) {
+            // Redirect ke halaman pendaftaran toko atau halaman error
+            return redirect()->route('register.shop')->with('error', 'Anda belum memiliki toko. Silakan daftar sebagai toko terlebih dahulu.');
+        }
+        
+        $query = Product::where('shop_id', $user->shop->id);
+        
         $query = Product::where('shop_id', Auth::user()->shop->id);
         
         // Search by name if provided
