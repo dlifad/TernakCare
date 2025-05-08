@@ -1,0 +1,29 @@
+/* resources/css/app.css */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom utility classes */
+@layer utilities {
+    .container {
+        @apply mx-auto px-4 sm:px-6 lg:px-8;
+    }
+    
+    .section {
+        @apply py-16;
+    }
+}
+
+/* Custom component classes */
+@layer components {
+    .footer-link {
+        @apply text-gray-600 hover:text-primary;
+    }
+}
+
+/* Font usage */
+body {
+    font-family: 'Nunito', sans-serif;
+    color: #333333;
+    background-color: #FFF9F0;
+}
