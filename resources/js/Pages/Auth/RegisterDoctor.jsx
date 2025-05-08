@@ -24,7 +24,6 @@ export default function RegisterDoctor() {
     return (
         <AuthLayout title="Daftar Sebagai Dokter Hewan">
             <div className="mb-6 text-center">
-                <h2 className="text-2xl font-bold text-neutral-dark">Bergabung Sebagai Dokter Hewan</h2>
                 <p className="text-neutral mt-2">Daftarkan diri Anda sebagai dokter hewan profesional</p>
             </div>
 

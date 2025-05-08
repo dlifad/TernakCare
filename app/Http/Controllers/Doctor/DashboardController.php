@@ -12,30 +12,39 @@ use Illuminate\Support\Facades\Auth;
 class DashboardController extends Controller
 {
     /**
-     * Display the doctor dashboard.
+     * Menampilkan dashboard dokter.
      *
      * @return \Inertia\Response
      */
     public function index()
     {
-        // Get pending consultations that need approval
-        $pendingConsultations = Consultation::where('doctor_id', auth::user()->doctor->id)
+        $doctor = Auth::user()->doctor;
+
+        if (!$doctor) {
+            abort(403, 'Akses ditolak. Akun ini bukan dokter.');
+        }
+
+        $doctorId = $doctor->id;
+
+        
+        // Dapatkan konsultasi yang tertunda dan memerlukan persetujuan
+        $pendingConsultations = Consultation::where('doctor_id', $doctorId)
             ->where('status', 'pending')
             ->with('farmer.user')
             ->orderBy('created_at', 'desc')
             ->get();
         
-        // Get active consultations
-        $activeConsultations = Consultation::where('doctor_id', auth::user()->doctor->id)
+        // Dapatkan konsultasi yang aktif
+        $activeConsultations = Consultation::where('doctor_id', $doctorId)
             ->where('status', 'approved')
             ->where('is_completed', false)
             ->with('farmer.user')
             ->orderBy('created_at', 'desc')
             ->get();
         
-        // Get consultation statistics
-        $totalConsultations = Consultation::where('doctor_id', auth::user()->doctor->id)->count();
-        $completedConsultations = Consultation::where('doctor_id', auth::user()->doctor->id)
+        // Dapatkan statistik konsultasi
+        $totalConsultations = Consultation::where('doctor_id', $doctorId)->count();
+        $completedConsultations = Consultation::where('doctor_id', $doctorId)
             ->where('is_completed', true)
             ->count();
         

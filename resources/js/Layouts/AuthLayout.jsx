@@ -8,7 +8,7 @@ export default function AuthLayout({ children, title }) {
             
             <div className="mb-6">
                 <Link href="/">
-                    <img src="/images/logo.png" alt="TernakCare" className="w-40" />
+                    <div className="font-bold text-2xl text-primary">TernakCare</div>
                 </Link>
             </div>
             

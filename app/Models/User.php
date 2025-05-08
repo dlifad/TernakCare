@@ -22,7 +22,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
-        'status', // Tambahkan status ke fillable
+        'status',
     ];
 
     /**
@@ -46,52 +46,49 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
-     * Set default status based on role
+     * Set default values based on role before creating user.
      */
     protected static function booted()
     {
         static::creating(function ($user) {
+            // Set default status for farmer
             if ($user->role === 'farmer' && empty($user->status)) {
                 $user->status = 'verified';
             }
         });
+
+        // Dihapus: auto-create doctor agar license_number bisa disiapkan saat pembuatan manual
+        // static::created(function ($user) {
+        //     if ($user->role === 'doctor') {
+        //         \App\Models\Doctor::create([
+        //             'user_id' => $user->id,
+        //         ]);
+        //     }
+        // });
     }
 
-    /**
-     * Get the doctor profile associated with the user.
-     */
+    // Relationships
     public function doctor()
     {
         return $this->hasOne(Doctor::class);
     }
 
-    /**
-     * Get the shop profile associated with the user.
-     */
     public function shop()
     {
         return $this->hasOne(Shop::class);
     }
 
-    /**
-     * Check if user is a farmer.
-     */
+    // Role checkers
     public function isFarmer()
     {
         return $this->role === 'farmer';
     }
 
-    /**
-     * Check if user is a doctor.
-     */
     public function isDoctor()
     {
         return $this->role === 'doctor';
     }
 
-    /**
-     * Check if user is a shop.
-     */
     public function isShop()
     {
         return $this->role === 'shop';

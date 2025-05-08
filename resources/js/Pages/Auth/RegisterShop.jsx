@@ -25,7 +25,6 @@ export default function RegisterShop() {
     return (
         <AuthLayout title="Daftar Sebagai Toko">
             <div className="mb-6 text-center">
-                <h2 className="text-2xl font-bold text-neutral-dark">Bergabung Sebagai Mitra Toko</h2>
                 <p className="text-neutral mt-2">Perluas jangkauan penjualan produk peternakan Anda</p>
             </div>
 
