@@ -90,6 +90,7 @@ class AuthController extends Controller
             'license_number' => $request->license_number,
             'practice_address' => $request->practice_address,
             'years_experience' => $request->years_experience,
+            'phone_number' => $request->phone_number,
             'status' => 'pending', // Status default, menunggu verifikasi admin
         ]);
 

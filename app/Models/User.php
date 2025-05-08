@@ -22,6 +22,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'status', // Tambahkan status ke fillable
     ];
 
     /**
@@ -43,6 +44,18 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Set default status based on role
+     */
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if ($user->role === 'farmer' && empty($user->status)) {
+                $user->status = 'verified';
+            }
+        });
+    }
 
     /**
      * Get the doctor profile associated with the user.
