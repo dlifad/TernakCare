@@ -56,7 +56,7 @@ class ProfileController extends Controller
     {
         $shop = Auth::user()->shop->load('user');
         
-        return Inertia::render('Shop/Profile/Edit', [
+        return Inertia::render('Shop/Profile/Index', [
             'shop' => $shop
         ]);
     }

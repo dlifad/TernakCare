@@ -145,7 +145,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
   };
   
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="m-10">
       {/* Product Image */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-neutral-dark mb-2">

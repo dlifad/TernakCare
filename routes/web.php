@@ -145,6 +145,8 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
 });
 
 
+
+
 // Farmer Routes
 Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('farmer.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'farmerDashboard'])->name('dashboard');
