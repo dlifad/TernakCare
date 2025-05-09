@@ -22,7 +22,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
-        'status',
     ];
 
     /**
@@ -50,12 +49,12 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected static function booted()
     {
-        static::creating(function ($user) {
-            // Set default status for farmer
-            if ($user->role === 'farmer' && empty($user->status)) {
-                $user->status = 'verified';
-            }
-        });
+        // static::creating(function ($user) {
+        //     // Set default status for farmer
+        //     if ($user->role === 'farmer' && empty($user->status)) {
+        //         $user->status = 'verified';
+        //     }
+        // });
 
         // Dihapus: auto-create doctor agar license_number bisa disiapkan saat pembuatan manual
         // static::created(function ($user) {
