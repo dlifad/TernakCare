@@ -47,24 +47,6 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Set default values based on role before creating user.
      */
-    protected static function booted()
-    {
-        // static::creating(function ($user) {
-        //     // Set default status for farmer
-        //     if ($user->role === 'farmer' && empty($user->status)) {
-        //         $user->status = 'verified';
-        //     }
-        // });
-
-        // Dihapus: auto-create doctor agar license_number bisa disiapkan saat pembuatan manual
-        // static::created(function ($user) {
-        //     if ($user->role === 'doctor') {
-        //         \App\Models\Doctor::create([
-        //             'user_id' => $user->id,
-        //         ]);
-        //     }
-        // });
-    }
 
     // Relationships
     public function doctor()

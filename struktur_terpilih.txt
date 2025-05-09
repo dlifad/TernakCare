@@ -1,0 +1,273 @@
+=== app ===
+Folder PATH listing for volume DATA
+Volume serial number is 1026-415E
+D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\APP
++---Http
+|   +---Controllers
+|   |   |   ArticleController.php
+|   |   |   AuthController.php
+|   |   |   ConsultationController.php
+|   |   |   Controller.php
+|   |   |   DashboardController.php
+|   |   |   DoctorController.php
+|   |   |   FarmerController.php
+|   |   |   ProductController.php
+|   |   |   ProfileController.php
+|   |   |   ShopController.php
+|   |   |   TransactionController.php
+|   |   |   
+|   |   +---Admin
+|   |   |       DashboardController.php
+|   |   |       
+|   |   +---Auth
+|   |   |       AuthenticatedSessionController.php
+|   |   |       ConfirmablePasswordController.php
+|   |   |       EmailVerificationNotificationController.php
+|   |   |       EmailVerificationPromptController.php
+|   |   |       NewPasswordController.php
+|   |   |       PasswordController.php
+|   |   |       PasswordResetLinkController.php
+|   |   |       RegisteredUserController.php
+|   |   |       VerifyEmailController.php
+|   |   |       
+|   |   +---Doctor
+|   |   |       ConsultationController.php
+|   |   |       DashboardController.php
+|   |   |       HistoryController.php
+|   |   |       ProfileController.php
+|   |   |       
+|   |   +---Farmer
+|   |   |       ActivityController.php
+|   |   |       ArticleController.php
+|   |   |       ConsultationController.php
+|   |   |       HomeController.php
+|   |   |       MarketplaceController.php
+|   |   |       ProfileController.php
+|   |   |       
+|   |   \---Shop
+|   |           HistoryController.php
+|   |           ProductController.php
+|   |           ProfileController.php
+|   |           TransactionController.php
+|   |           
+|   +---Middleware
+|   |       CheckRole.php
+|   |       CheckUserRole.php
+|   |       HandleInertiaRequests.php
+|   |       RoleMiddleware.php
+|   |       
+|   \---Requests
+|       |   ProfileUpdateRequest.php
+|       |   
+|       \---Auth
+|               LoginRequest.php
+|               
++---Models
+|       Article.php
+|       Chat.php
+|       Consultation.php
+|       Doctor.php
+|       Farmer.php
+|       Product.php
+|       Shop.php
+|       Transaction.php
+|       TransactionItem.php
+|       User.php
+|       
+\---Providers
+        AppServiceProvider.php
+        RouteServiceProvider.php
+        
+
+=== database ===
+Folder PATH listing for volume DATA
+Volume serial number is 1026-415E
+D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\DATABASE
+|   .gitignore
+|   database.sqlite
+|   
++---factories
+|       UserFactory.php
+|       
++---migrations
+|       0001_01_01_000000_create_users_table.php
+|       0001_01_01_000001_create_cache_table.php
+|       0001_01_01_000002_create_jobs_table.php
+|       2025_05_06_152951_add_role_to_users_table.php
+|       2025_05_06_153046_create_doctors_table.php
+|       2025_05_06_153222_create_shops_table.php
+|       2025_05_06_153230_create_farmers_table.php
+|       2025_05_06_153237_create_consultations_table.php
+|       2025_05_06_153254_create_products_table.php
+|       2025_05_06_153302_create_transactions_table.php
+|       2025_05_06_153310_create_articles_table.php
+|       2025_05_06_153802_create_transaction_items_table.php
+|       2025_05_06_153848_create_chats_table.php
+|       2025_05_07_111109_add_is_active_to_users_table.php
+|       2025_05_07_113840_add_featured_to_articles_table.php
+|       2025_05_07_114031_add_featured_to_products_table.php
+|       2025_05_07_145854_add_status_to_products_table.php
+|       2025_05_07_164852_add_phone_to_users_table.php
+|       2025_05_07_165145_add_address_to_users_table.php
+|       2025_05_08_081608_add_is_completed_to_consultations_table.php
+|       2025_05_08_083329_remove_specialization_and_education_from_doctors_table.php
+|       2025_05_08_091042_remove_shop_type_and_business_license_from_shops_table.php
+|       2025_05_08_100650_remove_is_active_from_users_table.php
+|       2025_05_09_173251_add_is_active_to_users_table.php
+|       
+\---seeders
+        AdminUserSeeder.php
+        DatabaseSeeder.php
+        
+
+=== resources ===
+Folder PATH listing for volume DATA
+Volume serial number is 1026-415E
+D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\RESOURCES
++---css
+|       app.css
+|       
++---js
+|   |   app.jsx
+|   |   bootstrap.js
+|   |   
+|   +---Components
+|   |   |   ApplicationLogo.jsx
+|   |   |   Checkbox.jsx
+|   |   |   DangerButton.jsx
+|   |   |   Dropdown.jsx
+|   |   |   Form.jsx
+|   |   |   InputError.jsx
+|   |   |   InputLabel.jsx
+|   |   |   Modal.jsx
+|   |   |   NavLink.jsx
+|   |   |   PrimaryButton.jsx
+|   |   |   ResponsiveNavLink.jsx
+|   |   |   SecondaryButton.jsx
+|   |   |   TextInput.jsx
+|   |   |   
+|   |   +---Admin
+|   |   |       DashboardStats.jsx
+|   |   |       UserApprovalCard.jsx
+|   |   |       
+|   |   +---Common
+|   |   |       Alert.jsx
+|   |   |       Button.jsx
+|   |   |       Card.jsx
+|   |   |       Footer.jsx
+|   |   |       InputError.jsx
+|   |   |       Modal.jsx
+|   |   |       Nav.jsx
+|   |   |       NavBar.jsx
+|   |   |       Pagination.jsx
+|   |   |       Sidebar.jsx
+|   |   |       
+|   |   +---Doctor
+|   |   |       ConsultationCard.jsx
+|   |   |       
+|   |   +---Farmer
+|   |   |       ActivityHistory.jsx
+|   |   |       ArticleCard.jsx
+|   |   |       ConsultationRequest.jsx
+|   |   |       MarketplaceCard.jsx
+|   |   |       
+|   |   +---LandingPage
+|   |   |       Button.jsx
+|   |   |       Card.jsx
+|   |   |       Newsletter.jsx
+|   |   |       SearchInput.jsx
+|   |   |       
+|   |   \---Shop
+|   |           Card.jsx
+|   |           Footer.jsx
+|   |           ProductCard.jsx
+|   |           ProductForm.jsx
+|   |           Table.jsx
+|   |           
+|   +---Layouts
+|   |       AdminLayout.jsx
+|   |       AuthenticatedLayout.jsx
+|   |       AuthLayout.jsx
+|   |       DoctorLayout.jsx
+|   |       FarmerLayout.jsx
+|   |       GuestLayout.jsx
+|   |       ShopLayout.jsx
+|   |       
+|   +---Pages
+|   |   |   Dashboard.jsx
+|   |   |   Welcome.jsx
+|   |   |   
+|   |   +---Admin
+|   |   |       Dashboard.jsx
+|   |   |       
+|   |   +---Auth
+|   |   |       ConfirmPassword.jsx
+|   |   |       ForgotPassword.jsx
+|   |   |       Login.jsx
+|   |   |       Register.jsx
+|   |   |       RegisterDoctor.jsx
+|   |   |       RegisterShop.jsx
+|   |   |       ResetPassword.jsx
+|   |   |       VerifyEmail.jsx
+|   |   |       
+|   |   +---Doctor
+|   |   |   |   Dashboard.jsx
+|   |   |   |   
+|   |   |   +---Consultations
+|   |   |   |       Index.jsx
+|   |   |   |       
+|   |   |   +---History
+|   |   |   |       Index.jsx
+|   |   |   |       
+|   |   |   \---Profile
+|   |   |           Index.jsx
+|   |   |           
+|   |   +---Farmer
+|   |   |   |   ActtivityHistory.jsx
+|   |   |   |   Home.jsx
+|   |   |   |   
+|   |   |   +---Activity
+|   |   |   |       Index.jsx
+|   |   |   |       
+|   |   |   +---Article
+|   |   |   |       Index.jsx
+|   |   |   |       
+|   |   |   +---Consultation
+|   |   |   |       Index.jsx
+|   |   |   |       
+|   |   |   +---Marketplace
+|   |   |   |       Index.jsx
+|   |   |   |       
+|   |   |   \---Profile
+|   |   |           Index.jsx
+|   |   |           
+|   |   +---Profile
+|   |   |   |   Edit.jsx
+|   |   |   |   
+|   |   |   \---Partials
+|   |   |           DeleteUserForm.jsx
+|   |   |           UpdatePasswordForm.jsx
+|   |   |           UpdateProfileInformationForm.jsx
+|   |   |           
+|   |   \---Shop
+|   |       |   Dashboard.jsx
+|   |       |   
+|   |       +---History
+|   |       |       Index.jsx
+|   |       |       
+|   |       +---ManageProduct
+|   |       |       Index.jsx
+|   |       |       
+|   |       +---Profile
+|   |       |       Index.jsx
+|   |       |       
+|   |       \---Transactions
+|   |               Index.jsx
+|   |               
+|   \---Services
+|           Product.jsx
+|           transaction.js
+|           
+\---views
+        app.blade.php
+        

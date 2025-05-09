@@ -42,8 +42,35 @@ Route::get('/', function () {
     ]);
 });
 
+// Tambahkan routes ini pada file routes/web.php
+
+// Route untuk halaman menunggu verifikasi
+Route::get('/awaiting-verification', [App\Http\Controllers\AuthController::class, 'awaitingVerification'])
+    ->name('awaiting.verification');
+
+// Routes admin untuk verifikasi pendaftaran
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    // Halaman daftar verifikasi
+    Route::get('/admin/verification', [App\Http\Controllers\Admin\VerificationController::class, 'index'])
+        ->name('admin.verification.index');
+    
+    // Routes untuk verifikasi dokter
+    Route::post('/admin/verification/doctor/{id}/approve', [App\Http\Controllers\Admin\VerificationController::class, 'approveDoctor'])
+        ->name('admin.verification.approve.doctor');
+    Route::post('/admin/verification/doctor/{id}/reject', [App\Http\Controllers\Admin\VerificationController::class, 'rejectDoctor'])
+        ->name('admin.verification.reject.doctor');
+    
+    // Routes untuk verifikasi toko
+    Route::post('/admin/verification/shop/{id}/approve', [App\Http\Controllers\Admin\VerificationController::class, 'approveShop'])
+        ->name('admin.verification.approve.shop');
+    Route::post('/admin/verification/shop/{id}/reject', [App\Http\Controllers\Admin\VerificationController::class, 'rejectShop'])
+        ->name('admin.verification.reject.shop');
+});
+
 // Authentication Routes - Modified for multi-role registration
 Route::middleware('guest')->group(function () {
+
+    
     // Login routes
     Route::get('login', [AuthController::class, 'showLoginForm'])
         ->name('login');

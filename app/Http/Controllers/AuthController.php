@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 
+
 class AuthController extends Controller
 {
     /**
@@ -60,7 +61,8 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('farmer.dashboard');
+        // Redirect ke halaman verifikasi email dulu
+        return redirect()->route('verification.notice');
     }
 
     /**
@@ -98,7 +100,8 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('doctor.dashboard');
+        // Redirect ke halaman verifikasi email dulu
+        return redirect()->route('verification.notice');
     }
 
     /**
@@ -138,6 +141,128 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('shop.dashboard');
+        // Redirect ke halaman verifikasi email dulu
+        return redirect()->route('verification.notice');
+    }
+
+    /**
+     * Display the email verification notice.
+     */
+    public function showVerificationNotice()
+    {
+        return Inertia::render('Auth/VerifyEmail');
+    }
+
+    /**
+     * Mark the user's email address as verified.
+     */
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        $user = User::findOrFail($id);
+
+        // Verifikasi hash
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            abort(403);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        // Setelah email terverifikasi, arahkan ke halaman menunggu verifikasi admin
+        if ($user->role === 'doctor' || $user->role === 'shop') {
+            return redirect()->route('awaiting.verification', ['userType' => $user->role]);
+        }
+
+        return redirect('/dashboard');
+    }
+
+    /**
+     * Resend the email verification notification.
+     */
+    public function resendVerificationEmail(Request $request)
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended('/dashboard');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('status', 'verification-link-sent');
+    }
+
+    /**
+     * Display awaiting verification page.
+     */
+    public function awaitingVerification(Request $request)
+    {
+        $userType = $request->query('userType', '');
+
+        // Pastikan email sudah diverifikasi
+        if (!Auth::user() || Auth::user()->email_verified_at === null) {
+            return redirect()->route('verification.notice');
+        }
+
+        return Inertia::render('Auth/AwaitingVerification', [
+            'userType' => $userType
+        ]);
+    }
+
+    /**
+     * Show the login form.
+     */
+    public function showLoginForm()
+    {
+        return Inertia::render('Auth/Login');
+    }
+
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+
+        $credentials = $request->only('email', 'password');
+
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $request->session()->regenerate();
+
+            $user = Auth::user();
+
+            // Jika email belum diverifikasi, redirect ke halaman verifikasi email
+            if (!$user || $user->email_verified_at === null) {
+                return redirect()->route('verification.notice');
+            }
+
+            // Jika user adalah dokter atau toko dengan status pending, redirect ke halaman menunggu verifikasi
+            if (($user->role === 'doctor' && $user->doctor && $user->doctor->status === 'pending') ||
+                ($user->role === 'shop' && $user->shop && $user->shop->status === 'pending')
+            ) {
+                return redirect()->route('awaiting.verification', ['userType' => $user->role]);
+            }
+
+            return redirect()->intended('/dashboard');
+        }
+
+        return back()->withErrors([
+            'email' => 'Kredensial yang diberikan tidak sesuai dengan data kami.',
+        ]);
+    }
+
+    /**
+     * Destroy an authenticated session.
+     */
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }
