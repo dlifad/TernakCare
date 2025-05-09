@@ -44,7 +44,7 @@ class ProfileController extends Controller
     {
         $doctor = Auth::user()->doctor->load('user');
         
-        return Inertia::render('Doctor/Profile/Edit', [
+        return Inertia::render('Doctor/Profile/Index', [
             'doctor' => $doctor
         ]);
     }

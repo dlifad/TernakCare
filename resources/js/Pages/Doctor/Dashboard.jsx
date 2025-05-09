@@ -20,32 +20,32 @@ export default function Dashboard() {
       { 
         id: 1, 
         farmerName: 'John Doe', 
-        farmType: 'Dairy Cattle', 
+        farmType: 'Sapi Perah', 
         date: '2025-05-08', 
-        time: '09:00 AM',
+        time: '09:00',
         type: 'chat',
         status: 'pending',
-        issue: 'Questions about livestock vaccination schedule',
+        issue: 'Pertanyaan tentang jadwal vaksinasi ternak',
       },
       { 
         id: 2, 
         farmerName: 'Alice Smith', 
-        farmType: 'Poultry', 
+        farmType: 'Peternakan Unggas', 
         date: '2025-05-08', 
-        time: '11:30 AM',
+        time: '11:30',
         type: 'video',
         status: 'pending',
-        issue: 'Chicken showing signs of respiratory issues',
+        issue: 'Ayam menunjukkan gejala masalah pernapasan',
       },
       { 
         id: 3, 
         farmerName: 'Bob Johnson', 
-        farmType: 'Goat Farm', 
+        farmType: 'Peternakan Kambing', 
         date: '2025-05-09', 
-        time: '10:00 AM',
+        time: '10:00',
         type: 'visit',
         status: 'pending',
-        issue: 'Need help with nutritional assessment for breeding goats',
+        issue: 'Butuh bantuan penilaian nutrisi untuk kambing bibit',
         location: 'Jl. Ternak No. 23, Bandung',
       },
     ]);
@@ -60,11 +60,11 @@ export default function Dashboard() {
 
   return (
     <DoctorLayout>
-      <Head title="Doctor Dashboard" />
+      <Head title="Dashboard Dokter" />
       
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-heading font-semibold text-neutral-darkest">Doctor Dashboard</h1>
+          <h1 className="text-2xl font-heading font-semibold text-neutral-darkest">Dashboard Dokter</h1>
           
           {/* Stats */}
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -76,7 +76,7 @@ export default function Dashboard() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-neutral truncate">Total Consultations</dt>
+                      <dt className="text-sm font-medium text-neutral truncate">Total Konsultasi</dt>
                       <dd>
                         <div className="text-lg font-semibold text-neutral-darkest">{stats.totalConsultations}</div>
                       </dd>
@@ -94,7 +94,7 @@ export default function Dashboard() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-neutral truncate">Chat Consultations</dt>
+                      <dt className="text-sm font-medium text-neutral truncate">Konsultasi Chat</dt>
                       <dd>
                         <div className="text-lg font-semibold text-neutral-darkest">{stats.chatConsultations}</div>
                       </dd>
@@ -112,7 +112,7 @@ export default function Dashboard() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-neutral truncate">Video Consultations</dt>
+                      <dt className="text-sm font-medium text-neutral truncate">Konsultasi Video</dt>
                       <dd>
                         <div className="text-lg font-semibold text-neutral-darkest">{stats.videoConsultations}</div>
                       </dd>
@@ -130,7 +130,7 @@ export default function Dashboard() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-neutral truncate">Farm Visits</dt>
+                      <dt className="text-sm font-medium text-neutral truncate">Kunjungan Peternakan</dt>
                       <dd>
                         <div className="text-lg font-semibold text-neutral-darkest">{stats.visitConsultations}</div>
                       </dd>
@@ -143,7 +143,7 @@ export default function Dashboard() {
           
           {/* Pending Consultations */}
           <div className="mt-8">
-            <h2 className="text-xl font-heading font-medium text-neutral-darkest mb-4">Pending Consultations</h2>
+            <h2 className="text-xl font-heading font-medium text-neutral-darkest mb-4">Konsultasi Tertunda</h2>
             
             <div className="space-y-4">
               {pendingConsultations.map((consultation) => (
@@ -152,7 +152,7 @@ export default function Dashboard() {
               
               {pendingConsultations.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-lg shadow-soft">
-                  <div className="text-neutral">No pending consultations at this time</div>
+                  <div className="text-neutral">Tidak ada konsultasi tertunda saat ini</div>
                 </div>
               )}
             </div>
@@ -160,7 +160,7 @@ export default function Dashboard() {
           
           {/* Schedule for today */}
           <div className="mt-8">
-            <h2 className="text-xl font-heading font-medium text-neutral-darkest mb-4">Today's Schedule</h2>
+            <h2 className="text-xl font-heading font-medium text-neutral-darkest mb-4">Jadwal Hari Ini</h2>
             
             <div className="bg-white shadow-soft rounded-lg overflow-hidden">
               <div className="divide-y divide-neutral-light">
@@ -170,12 +170,12 @@ export default function Dashboard() {
                       <MessageCircle size={20} className="text-primary" />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium text-neutral-darkest">Chat with Richard Cooper</h3>
-                      <p className="text-xs text-neutral mt-1">09:30 AM - Dairy Cattle Nutrition</p>
+                      <h3 className="text-sm font-medium text-neutral-darkest">Chat dengan Richard Cooper</h3>
+                      <p className="text-xs text-neutral mt-1">09:30 - Nutrisi Sapi Perah</p>
                     </div>
                   </div>
                   <span className="px-3 py-1 text-xs rounded-full bg-success bg-opacity-10 text-success">
-                    Completed
+                    Selesai
                   </span>
                 </div>
                 
@@ -185,12 +185,12 @@ export default function Dashboard() {
                       <Video size={20} className="text-accent" />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium text-neutral-darkest">Video Call with John Doe</h3>
-                      <p className="text-xs text-neutral mt-1">01:00 PM - Dairy Cattle Health Check</p>
+                      <h3 className="text-sm font-medium text-neutral-darkest">Panggilan Video dengan John Doe</h3>
+                      <p className="text-xs text-neutral mt-1">13:00 - Pemeriksaan Kesehatan Sapi Perah</p>
                     </div>
                   </div>
                   <span className="px-3 py-1 text-xs rounded-full bg-warning bg-opacity-10 text-warning">
-                    Upcoming
+                    Akan Datang
                   </span>
                 </div>
                 
@@ -200,12 +200,12 @@ export default function Dashboard() {
                       <Calendar size={20} className="text-warning" />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-sm font-medium text-neutral-darkest">Visit to Alice Smith's Farm</h3>
-                      <p className="text-xs text-neutral mt-1">03:30 PM - Poultry Health Assessment</p>
+                      <h3 className="text-sm font-medium text-neutral-darkest">Kunjungan ke Peternakan Alice Smith</h3>
+                      <p className="text-xs text-neutral mt-1">15:30 - Penilaian Kesehatan Unggas</p>
                     </div>
                   </div>
                   <span className="px-3 py-1 text-xs rounded-full bg-warning bg-opacity-10 text-warning">
-                    Upcoming
+                    Akan Datang
                   </span>
                 </div>
               </div>

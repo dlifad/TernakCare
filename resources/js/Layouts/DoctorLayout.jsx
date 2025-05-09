@@ -8,10 +8,10 @@ export default function DoctorLayout({ children }) {
   const user = auth?.user;
 
   const navigation = [
-    { name: 'Dashboard', href: '/doctor/dashboard', icon: LayoutDashboard, current: true },
-    { name: 'Consultations', href: '/doctor/consultations', icon: Stethoscope, current: false },
-    { name: 'History', href: '/doctor/history', icon: ClipboardList, current: false },
-    { name: 'Profile', href: '/doctor/profile', icon: User, current: false },
+    { name: 'Dashboard', href: '/doctor/dashboard', icon: LayoutDashboard, current: window.location.pathname === '/doctor/dashboard' },
+    { name: 'Konsultasi', href: '/doctor/consultations', icon: Stethoscope, current: window.location.pathname === '/doctor/consultations' },
+    { name: 'Riwayat', href: '/doctor/history', icon: ClipboardList, current: window.location.pathname === '/doctor/history' },
+    { name: 'Profil', href: '/doctor/profile', icon: User, current: window.location.pathname === '/doctor/profile' },
   ];
 
   return (
