@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Doctor;
 use App\Models\Shop;
+use App\Notifications\AccountVerificationNotification;
+use App\Notifications\AccountRejectedNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
-
 
 class AuthController extends Controller
 {
@@ -55,6 +56,8 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'farmer',
+            'is_active' => true,
+            'is_approved' => true,
         ]);
 
         event(new Registered($user));
@@ -85,6 +88,8 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'doctor',
+            'is_active' => true,
+            'is_approved' => false,
         ]);
 
         Doctor::create([
@@ -125,6 +130,8 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'shop',
+            'is_active' => true,
+            'is_approved' => false,
         ]);
 
         Shop::create([
@@ -170,7 +177,7 @@ class AuthController extends Controller
         }
 
         // Setelah email terverifikasi, arahkan ke halaman menunggu verifikasi admin
-        if ($user->role === 'doctor' || $user->role === 'shop') {
+        if (($user->role === 'doctor' || $user->role === 'shop') && !$user->is_approved) {
             return redirect()->route('awaiting.verification', ['userType' => $user->role]);
         }
 
@@ -228,29 +235,68 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
+        // Coba autentikasi
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();
 
-            // Jika email belum diverifikasi, redirect ke halaman verifikasi email
-            if (!$user || $user->email_verified_at === null) {
-                return redirect()->route('verification.notice');
+            // Jika email belum diverifikasi
+            if ($user->email_verified_at === null) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Email Anda belum diverifikasi. Silakan cek inbox email Anda untuk link verifikasi.',
+                ])->withInput();
             }
 
-            // Jika user adalah dokter atau toko dengan status pending, redirect ke halaman menunggu verifikasi
-            if (($user->role === 'doctor' && $user->doctor && $user->doctor->status === 'pending') ||
-                ($user->role === 'shop' && $user->shop && $user->shop->status === 'pending')
-            ) {
-                return redirect()->route('awaiting.verification', ['userType' => $user->role]);
+            // Jika user dokter dengan status pending
+            if ($user->role === 'doctor' && $user->doctor && $user->doctor->status === 'pending') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Akun dokter Anda sedang menunggu diverifikasi oleh admin.',
+                ])->withInput();
             }
 
+            // Jika user dokter dengan status rejected
+            if ($user->role === 'doctor' && $user->doctor && $user->doctor->status === 'rejected') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Maaf, pendaftaran akun dokter Anda ditolak.',
+                ])->withInput();
+            }
+
+            // Jika user toko dengan status pending
+            if ($user->role === 'shop' && $user->shop && $user->shop->status === 'pending') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Akun toko Anda sedang menunggu diverifikasi oleh admin.',
+                ])->withInput();
+            }
+
+            // Jika user toko dengan status rejected
+            if ($user->role === 'shop' && $user->shop && $user->shop->status === 'rejected') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Maaf, pendaftaran akun toko Anda ditolak.',
+                ])->withInput();
+            }
+
+            // Jika akun tidak aktif
+            if (!$user->is_active) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Akun Anda dinonaktifkan. Silakan hubungi admin.',
+                ])->withInput();
+            }
+
+            // Jika semua pemeriksaan lulus, redirect ke dashboard
             return redirect()->intended('/dashboard');
         }
 
+        // Jika autentikasi gagal
         return back()->withErrors([
-            'email' => 'Kredensial yang diberikan tidak sesuai dengan data kami.',
-        ]);
+            'email' => 'Email atau password Anda salah.',
+        ])->withInput();
     }
 
     /**

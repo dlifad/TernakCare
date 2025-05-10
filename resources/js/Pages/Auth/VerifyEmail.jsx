@@ -3,8 +3,9 @@
 
 // Versi React (JSX)
 import React from 'react';
-import { Head, Link } from "@inertiajs/react";
+import { useForm, Head, Link } from "@inertiajs/react";
 import AuthLayout from '@/Layouts/AuthLayout';
+
 
 export default function VerifyEmail({ status }) {
     const { post, processing } = useForm();

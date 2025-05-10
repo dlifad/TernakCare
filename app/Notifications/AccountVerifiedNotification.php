@@ -11,10 +11,12 @@ class AccountVerifiedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    private $userType;
+    protected $userType;
 
     /**
      * Create a new notification instance.
+     *
+     * @return void
      */
     public function __construct($userType)
     {
@@ -24,38 +26,45 @@ class AccountVerifiedNotification extends Notification implements ShouldQueue
     /**
      * Get the notification's delivery channels.
      *
-     * @return array<int, string>
+     * @param  mixed  $notifiable
+     * @return array
      */
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
         return ['mail'];
     }
 
     /**
      * Get the mail representation of the notification.
+     *
+     * @param  mixed  $notifiable
+     * @return \Illuminate\Notifications\Messages\MailMessage
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
-        $userTypeText = $this->userType === 'doctor' ? 'Dokter' : 'Toko';
-        
+        $type = $this->userType === 'doctor' ? 'Dokter' : 'Toko';
+        $loginUrl = url('/login');
+
         return (new MailMessage)
-            ->subject("Akun {$userTypeText} Anda Telah Diverifikasi")
-            ->greeting("Selamat {$notifiable->name}!")
-            ->line("Akun {$userTypeText} Anda telah diverifikasi oleh Admin dan sekarang aktif.")
-            ->line("Anda sekarang dapat login dan mengakses semua fitur TernakCare.")
-            ->action('Login Sekarang', url('/login'))
+            ->subject("Akun $type Anda Telah Diverifikasi")
+            ->greeting("Selamat, {$notifiable->name}!")
+            ->line("Akun $type Anda di TernakCare telah diverifikasi oleh admin.")
+            ->line("Anda sekarang dapat masuk ke platform dan mulai menggunakan fitur-fitur yang tersedia.")
+            ->action('Masuk Sekarang', $loginUrl)
             ->line('Terima kasih telah bergabung dengan TernakCare!');
     }
 
     /**
      * Get the array representation of the notification.
      *
-     * @return array<string, mixed>
+     * @param  mixed  $notifiable
+     * @return array
      */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            //
+            'message' => 'Akun Anda telah diverifikasi.',
+            'type' => $this->userType,
         ];
     }
 }

@@ -12,7 +12,7 @@ export default function AwaitingVerification({ userType }) {
             <Head title="Pendaftaran Dokter Berhasil" />
 
             <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md text-center">
-                <svg 
+                {/* <svg 
                     className="w-16 h-16 mx-auto mb-4" 
                     xmlns="http://www.w3.org/2000/svg" 
                     width="44" 
@@ -29,7 +29,7 @@ export default function AwaitingVerification({ userType }) {
                     <path d="M12 12l8 -4.5" />
                     <path d="M12 12l0 9" />
                     <path d="M12 12l-8 -4.5" />
-                </svg>
+                </svg> */}
 
                 <h2 className="text-2xl font-semibold mb-2">Pendaftaran {userType === 'doctor' ? 'Dokter' : 'Toko'} Berhasil</h2>
                 

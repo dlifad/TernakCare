@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useEffect } from 'react';
+import { Link, useForm } from '@inertiajs/react';
 import AuthLayout from '@/Layouts/AuthLayout';
 import Button from '@/Components/Common/Button';
 
-export default function Login() {
-    const { data, setData, post, processing, errors } = useForm({
+export default function Login({ status }) {
+    const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
         remember: false,
     });
     
+    // Reset password field on component unmount
+    useEffect(() => {
+        return () => {
+            reset('password');
+        };
+    }, []);
+    
     const handleSubmit = (e) => {
         e.preventDefault();
-        post('/login');
+        post(route('login'));
+    };
+    
+    // Display any flash messages or login errors at the top of the form
+    const renderFlashMessages = () => {
+
+        if (status) {
+            return (
+                <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                    {status}
+                </div>
+            );
+        }
+        
+        // If there are login errors (from AuthController)
+        if (errors.email || errors.password || errors.general) {
+            return (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {errors.email || errors.password || errors.general}
+                </div>
+            );
+        }
+        
+        return null;
     };
     
     return (
         <AuthLayout title="Masuk ke Akun Anda">
+            {renderFlashMessages()}
+            
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                     <label htmlFor="email" className="block text-sm font-medium text-neutral-dark mb-1">
@@ -27,12 +59,12 @@ export default function Login() {
                         type="email"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
-                        className="w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50"
+                        className={`w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50 ${
+                            errors.email ? 'border-red-500' : ''
+                        }`}
                         required
+                        autoFocus
                     />
-                    {errors.email && (
-                        <p className="text-xs text-danger mt-1">{errors.email}</p>
-                    )}
                 </div>
                 
                 <div className="mb-4">
@@ -44,7 +76,9 @@ export default function Login() {
                         type="password"
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
-                        className="w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50"
+                        className={`w-full rounded-md shadow-sm border-neutral-light focus:border-primary focus:ring focus:ring-primary-light focus:ring-opacity-50 ${
+                            errors.password ? 'border-red-500' : ''
+                        }`}
                         required
                     />
                     {errors.password && (
@@ -68,7 +102,7 @@ export default function Login() {
                     
                     <div>
                         <Link
-                            href="/forgot-password"
+                            href={route('password.request')}
                             className="text-sm text-primary hover:text-primary-dark"
                         >
                             Lupa password?
@@ -81,14 +115,14 @@ export default function Login() {
                     className="w-full"
                     disabled={processing}
                 >
-                    Masuk
+                    {processing ? 'Memproses...' : 'Masuk'}
                 </Button>
                 
                 <div className="mt-6 text-center">
                     <p className="text-sm text-neutral">
                         Belum punya akun?{' '}
                         <Link
-                            href="/register"
+                            href={route('register')}
                             className="text-primary hover:text-primary-dark font-medium"
                         >
                             Daftar

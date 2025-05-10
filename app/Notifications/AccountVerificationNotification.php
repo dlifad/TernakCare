@@ -11,72 +11,58 @@ class AccountVerificationNotification extends Notification implements ShouldQueu
 {
     use Queueable;
 
-    protected $status;
-    protected $accountType;
-    protected $rejectionReason;
-
     /**
      * Create a new notification instance.
      *
-     * @param string $status 'approved' or 'rejected'
-     * @param string $accountType 'doctor' or 'shop'
-     * @param string|null $rejectionReason Reason for rejection if status is 'rejected'
+     * @return void
      */
-    public function __construct($status, $accountType, $rejectionReason = null)
+    public function __construct()
     {
-        $this->status = $status;
-        $this->accountType = $accountType;
-        $this->rejectionReason = $rejectionReason;
+        //
     }
 
     /**
      * Get the notification's delivery channels.
      *
-     * @return array<int, string>
+     * @param  mixed  $notifiable
+     * @return array
      */
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
         return ['mail'];
     }
 
     /**
      * Get the mail representation of the notification.
+     *
+     * @param  mixed  $notifiable
+     * @return \Illuminate\Notifications\Messages\MailMessage
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
-        $accountTypeLabel = $this->accountType === 'doctor' ? 'Dokter' : 'Toko';
+        $role = $notifiable->role;
+        $roleText = $role === 'doctor' ? 'Dokter' : 'Toko';
         
-        if ($this->status === 'approved') {
-            return (new MailMessage)
-                ->subject("Pendaftaran $accountTypeLabel Anda Disetujui")
-                ->greeting("Halo {$notifiable->name},")
-                ->line("Selamat! Pendaftaran $accountTypeLabel Anda pada TemakCare telah disetujui.")
-                ->line("Anda sekarang dapat masuk dan menggunakan semua fitur yang tersedia untuk $accountTypeLabel.")
-                ->action('Masuk Sekarang', url('/login'))
-                ->line('Terima kasih telah menggunakan TemakCare!');
-        } else {
-            return (new MailMessage)
-                ->subject("Pendaftaran $accountTypeLabel Anda Ditolak")
-                ->greeting("Halo {$notifiable->name},")
-                ->line("Maaf, pendaftaran $accountTypeLabel Anda pada TemakCare tidak dapat disetujui.")
-                ->line("Alasan: " . $this->rejectionReason)
-                ->line("Jika Anda memiliki pertanyaan atau memerlukan klarifikasi lebih lanjut, silakan hubungi tim dukungan kami.")
-                ->action('Hubungi Dukungan', url('/contact-us'))
-                ->line('Terima kasih telah memahami.');
-        }
+        return (new MailMessage)
+            ->subject('Pendaftaran Akun ' . $roleText . ' TernakCare')
+            ->greeting('Halo, ' . $notifiable->name . '!')
+            ->line('Terima kasih telah mendaftar sebagai ' . $roleText . ' di TernakCare.')
+            ->line('Sebelum Anda dapat menggunakan akun ' . $roleText . ', kami perlu memverifikasi identitas Anda.')
+            ->line('Tim kami sedang memeriksa informasi yang Anda berikan pada saat pendaftaran.')
+            ->line('Proses ini biasanya membutuhkan waktu 1-2 hari kerja. Kami akan memberi tahu Anda melalui email ini setelah proses verifikasi selesai.')
+            ->line('Terima kasih atas kesabaran Anda.');
     }
 
     /**
      * Get the array representation of the notification.
      *
-     * @return array<string, mixed>
+     * @param  mixed  $notifiable
+     * @return array
      */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            'status' => $this->status,
-            'accountType' => $this->accountType,
-            'rejectionReason' => $this->rejectionReason,
+            //
         ];
     }
 }

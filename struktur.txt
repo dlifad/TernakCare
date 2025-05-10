@@ -1,4 +1,3 @@
-=== app ===
 Folder PATH listing for volume DATA
 Volume serial number is 1026-415E
 D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\APP
@@ -18,6 +17,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   
 |   |   +---Admin
 |   |   |       DashboardController.php
+|   |   |       VerificationController.php
 |   |   |       
 |   |   +---Auth
 |   |   |       AuthenticatedSessionController.php
@@ -74,12 +74,15 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |       TransactionItem.php
 |       User.php
 |       
++---Notifications
+|       AccountRejectedNotification.php
+|       AccountVerificationNotification.php
+|       AccountVerifiedNotification.php
+|       
 \---Providers
         AppServiceProvider.php
         RouteServiceProvider.php
         
-
-=== database ===
 Folder PATH listing for volume DATA
 Volume serial number is 1026-415E
 D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\DATABASE
@@ -114,13 +117,13 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |       2025_05_08_091042_remove_shop_type_and_business_license_from_shops_table.php
 |       2025_05_08_100650_remove_is_active_from_users_table.php
 |       2025_05_09_173251_add_is_active_to_users_table.php
+|       2025_05_09_183343_add_rejection_reason_to_doctors_and_shops_tables.php
+|       2025_05_09_185205_add_is_approved_to_users_table.php
 |       
 \---seeders
         AdminUserSeeder.php
         DatabaseSeeder.php
         
-
-=== resources ===
 Folder PATH listing for volume DATA
 Volume serial number is 1026-415E
 D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\RESOURCES
@@ -198,9 +201,13 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   Welcome.jsx
 |   |   |   
 |   |   +---Admin
-|   |   |       Dashboard.jsx
-|   |   |       
+|   |   |   |   Dashboard.jsx
+|   |   |   |   
+|   |   |   \---Verification
+|   |   |           Index.js
+|   |   |           
 |   |   +---Auth
+|   |   |       AwaitingVerification.jsx
 |   |   |       ConfirmPassword.jsx
 |   |   |       ForgotPassword.jsx
 |   |   |       Login.jsx
