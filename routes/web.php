@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\VerificationController;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+// use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Doctor\ConsultationController as DoctorConsultationController;
 use App\Http\Controllers\Doctor\DashboardController as DoctorDashboardController;
@@ -49,50 +50,50 @@ Route::get('/', function () {
 // Rute Autentikasi
 Route::middleware('guest')->group(function () {
     // Halaman login
-    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/login', [AuthenticatedSessionController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'login']);
 
     // Halaman registrasi
-    Route::get('/register', [AuthController::class, 'createFarmer'])->name('register');
-    Route::post('/register', [AuthController::class, 'storeFarmer']);
+    Route::get('/register', [AuthenticatedSessionController::class, 'createFarmer'])->name('register');
+    Route::post('/register', [AuthenticatedSessionController::class, 'storeFarmer']);
     
-    Route::get('/register/doctor', [AuthController::class, 'createDoctor'])->name('register.doctor');
-    Route::post('/register/doctor', [AuthController::class, 'storeDoctor']);
+    Route::get('/register/doctor', [AuthenticatedSessionController::class, 'createDoctor'])->name('register.doctor');
+    Route::post('/register/doctor', [AuthenticatedSessionController::class, 'storeDoctor']);
     
-    Route::get('/register/shop', [AuthController::class, 'createShop'])->name('register.shop');
-    Route::post('/register/shop', [AuthController::class, 'storeShop']);
+    Route::get('/register/shop', [AuthenticatedSessionController::class, 'createShop'])->name('register.shop');
+    Route::post('/register/shop', [AuthenticatedSessionController::class, 'storeShop']);
     
     // Password reset
-    Route::get('forgot-password', [AuthController::class, 'forgotPassword'])
+    Route::get('forgot-password', [AuthenticatedSessionController::class, 'forgotPassword'])
         ->name('password.request');
-    Route::post('forgot-password', [AuthController::class, 'sendResetLink'])
+    Route::post('forgot-password', [AuthenticatedSessionController::class, 'sendResetLink'])
         ->name('password.email');
-    Route::get('reset-password/{token}', [AuthController::class, 'resetPassword'])
+    Route::get('reset-password/{token}', [AuthenticatedSessionController::class, 'resetPassword'])
         ->name('password.reset');
-    Route::post('reset-password', [AuthController::class, 'updatePassword'])
+    Route::post('reset-password', [AuthenticatedSessionController::class, 'updatePassword'])
         ->name('password.update');
 });
 
 // Rute Verifikasi Email
-Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])
+Route::get('/email/verify', [AuthenticatedSessionController::class, 'showVerificationNotice'])
     ->middleware('auth')
     ->name('verification.notice');
 
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+Route::get('/email/verify/{id}/{hash}', [AuthenticatedSessionController::class, 'verifyEmail'])
     ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 
-Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
+Route::post('/email/verification-notification', [AuthenticatedSessionController::class, 'resendVerificationEmail'])
     ->middleware(['auth', 'throttle:6,1'])
     ->name('verification.send');
 
 // Halaman Menunggu Verifikasi Admin
-Route::get('/awaiting-verification', [AuthController::class, 'awaitingVerification'])
+Route::get('/awaiting-verification', [AuthenticatedSessionController::class, 'awaitingVerification'])
     ->middleware(['auth', 'verified'])
     ->name('awaiting.verification');
 
 // Logout
-Route::post('/logout', [AuthController::class, 'logout'])
+Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 

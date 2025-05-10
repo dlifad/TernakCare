@@ -5,6 +5,7 @@
 import React from 'react';
 import { useForm, Head, Link } from "@inertiajs/react";
 import AuthLayout from '@/Layouts/AuthLayout';
+import Button from '@/Components/Common/Button';
 
 
 export default function VerifyEmail({ status }) {
@@ -20,9 +21,9 @@ export default function VerifyEmail({ status }) {
             <Head title="Verifikasi Email" />
 
             <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-                <div className="mb-4 text-sm text-gray-600">
-                    Terima kasih telah mendaftar! Sebelum memulai, bisakah Anda memverifikasi alamat email Anda dengan
-                    mengklik tautan yang baru saja kami kirimkan melalui email kepada Anda? Jika Anda tidak menerima email tersebut,
+                <div className="mb-4 text-md text-gray-600 text-justify">
+                    Silahkan memverifikasi alamat email Anda dengan
+                    mengklik tautan yang baru saja kami kirimkan melalui email kepada Anda. <br></br>Jika Anda tidak menerima email tersebut,
                     kami dengan senang hati akan mengirimkan email lain kepada Anda.
                 </div>
 
@@ -34,14 +35,13 @@ export default function VerifyEmail({ status }) {
 
                 <form onSubmit={submit}>
                     <div className="mt-4 flex items-center justify-between">
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
+                        <Button 
+                            type="submit" 
+                            variant="primary" 
                             disabled={processing}
                         >
                             Kirim Ulang Email Verifikasi
-                        </button>
-
+                        </Button>
                         <Link
                             href={route('logout')}
                             method="post"
