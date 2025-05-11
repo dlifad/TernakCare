@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DashboardStats from '@/Components/Admin/DashboardStats';
 import UserApprovalCard from '@/Components/Admin/UserApprovalCard';
+import UserCard from '@/Components/Admin/UserCard';
 import axios from 'axios';
 
 export default function Dashboard() {
@@ -34,69 +35,58 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Fetch data dari API endpoint
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Gunakan axios dengan header khusus untuk Inertia
-        const axiosConfig = {
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-Inertia': true
-          }
-        };
-        
-        // Alternatif 1: Gunakan endpoint yang dikonfigurasi untuk Inertia
-        const statsResponse = await axios.get('/admin/dashboard/stats', axiosConfig);
-        setStats(statsResponse.data.props ? statsResponse.data.props.stats : statsResponse.data);
-        
-        // Alternatif 2: Jika API tetap menggunakan endpoint biasa, tangani responsenya dengan benar
-        // const statsResponse = await axios.get('/api/admin/dashboard/stats');
-        // setStats(statsResponse.data);
-        
-        // Fetch pending users (menggunakan URL yang sesuai dengan setup Inertia)
-        const pendingResponse = await axios.get('/admin/users/pending', axiosConfig);
-        setPendingUsers(pendingResponse.data.props ? pendingResponse.data.props.users : pendingResponse.data);
-        
-        // Fetch data lainnya sesuai tab yang aktif
-        await fetchTabData(activeTab);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setError('Terjadi kesalahan saat mengambil data. Silakan coba lagi nanti.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
+    fetchDashboardData();
   }, []);
+  
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch stats data
+      const statsResponse = await axios.get('/admin/dashboard/stats');
+      setStats(statsResponse.data);
+      
+      // Fetch initial pending users data
+      const pendingResponse = await axios.get('/admin/users/pending');
+      setPendingUsers(pendingResponse.data);
+      
+      // Fetch data for active tab if not 'pending'
+      if (activeTab !== 'pending') {
+        await fetchTabData(activeTab);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setError('Terjadi kesalahan saat mengambil data. Silakan coba lagi nanti.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Fungsi untuk fetch data berdasarkan tab yang aktif
   const fetchTabData = async (tabId) => {
     setIsLoading(true);
     setError(null);
     
-    // Konfigurasi untuk permintaan Inertia
-    const axiosConfig = {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-Inertia': true
-      }
-    };
-    
     try {
-      // Gunakan endpoint sesuai dengan setup Inertia
       const baseUrl = '/admin/users';
       
-      if (tabId === 'farmers' && farmers.length === 0) {
-        const response = await axios.get(`${baseUrl}/farmers`, axiosConfig);
-        setFarmers(response.data.props ? response.data.props.farmers : response.data);
-      } else if (tabId === 'doctors' && doctors.length === 0) {
-        const response = await axios.get(`${baseUrl}/doctors`, axiosConfig);
-        setDoctors(response.data.props ? response.data.props.doctors : response.data);
-      } else if (tabId === 'shops' && shops.length === 0) {
-        const response = await axios.get(`${baseUrl}/shops`, axiosConfig);
-        setShops(response.data.props ? response.data.props.shops : response.data);
+      switch(tabId) {
+        case 'farmers':
+          const farmersResponse = await axios.get(`${baseUrl}/farmers`);
+          setFarmers(farmersResponse.data);
+          break;
+        case 'doctors':
+          const doctorsResponse = await axios.get(`${baseUrl}/doctors`);
+          setDoctors(doctorsResponse.data);
+          break;
+        case 'shops':
+          const shopsResponse = await axios.get(`${baseUrl}/shops`);
+          setShops(shopsResponse.data);
+          break;
+        case 'pending':
+          const pendingResponse = await axios.get(`${baseUrl}/pending`);
+          setPendingUsers(pendingResponse.data);
+          break;
       }
     } catch (error) {
       console.error(`Error fetching ${tabId} data:`, error);
@@ -141,14 +131,13 @@ export default function Dashboard() {
       case 'farmers':
         return farmers.filter(farmer => 
           farmer.name.toLowerCase().includes(term) || 
-          farmer.email.toLowerCase().includes(term) ||
-          farmer.status.toLowerCase().includes(term)
+          farmer.email.toLowerCase().includes(term)
         );
       case 'doctors':
         return doctors.filter(doctor => 
           doctor.name.toLowerCase().includes(term) || 
           doctor.email.toLowerCase().includes(term) || 
-          doctor.specialty.toLowerCase().includes(term) ||
+          (doctor.specialty && doctor.specialty.toLowerCase().includes(term)) ||
           doctor.status.toLowerCase().includes(term)
         );
       case 'shops':
@@ -180,45 +169,62 @@ export default function Dashboard() {
     setCurrentPage(1); // Reset ke halaman pertama saat ganti tab
     setSearchTerm(''); // Clear search saat ganti tab
     
-    // Fetch data untuk tab yang baru jika belum diambil
+    // Fetch data untuk tab yang baru
     fetchTabData(tabId);
   };
   
-  // Fungsi untuk handle approve/suspend user
-  const handleUserAction = async (userId, action) => {
+  // Fungsi untuk handle approve user
+  const handleApproveUser = async (userId) => {
     try {
-      // Konfigurasi untuk permintaan Inertia
-      const axiosConfig = {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-Inertia': true
-        }
-      };
+      await axios.post(`/admin/users/${userId}/approve`);
       
-      // Gunakan endpoint yang sesuai dengan setup Inertia
-      await axios.post(`/admin/users/${userId}/${action}`, {}, axiosConfig);
+      // Refresh the data
+      await fetchTabData(activeTab);
+      const statsResponse = await axios.get('/admin/dashboard/stats');
+      setStats(statsResponse.data);
       
-      // Refresh data setelah aksi berhasil
-      if (activeTab === 'pending') {
-        const pendingResponse = await axios.get('/admin/users/pending', axiosConfig);
-        setPendingUsers(pendingResponse.data.props ? pendingResponse.data.props.users : pendingResponse.data);
-      } else if (activeTab === 'farmers') {
-        const farmersResponse = await axios.get('/admin/users/farmers', axiosConfig);
-        setFarmers(farmersResponse.data.props ? farmersResponse.data.props.farmers : farmersResponse.data);
-      } else if (activeTab === 'doctors') {
-        const doctorsResponse = await axios.get('/admin/users/doctors', axiosConfig);
-        setDoctors(doctorsResponse.data.props ? doctorsResponse.data.props.doctors : doctorsResponse.data);
-      } else if (activeTab === 'shops') {
-        const shopsResponse = await axios.get('/admin/users/shops', axiosConfig);
-        setShops(shopsResponse.data.props ? shopsResponse.data.props.shops : shopsResponse.data);
+      // If you approved a user from pending tab, you need to update the pending users as well
+      if (activeTab !== 'pending') {
+        const pendingResponse = await axios.get('/admin/users/pending');
+        setPendingUsers(pendingResponse.data);
       }
-      
-      // Refresh stats
-      const statsResponse = await axios.get('/admin/dashboard/stats', axiosConfig);
-      setStats(statsResponse.data.props ? statsResponse.data.props.stats : statsResponse.data);
     } catch (error) {
-      console.error(`Error performing ${action} on user ${userId}:`, error);
-      setError(`Terjadi kesalahan saat melakukan ${action}. Silakan coba lagi nanti.`);
+      console.error(`Error approving user ${userId}:`, error);
+      setError(`Terjadi kesalahan saat menyetujui pengguna. Silakan coba lagi nanti.`);
+    }
+  };
+  
+  // Fungsi untuk handle reject user
+  const handleRejectUser = async (userId) => {
+    try {
+      await axios.post(`/admin/users/${userId}/reject`);
+      
+      // Refresh the data
+      await fetchTabData(activeTab);
+      const statsResponse = await axios.get('/admin/dashboard/stats');
+      setStats(statsResponse.data);
+      
+      // If you rejected a user from pending tab, you need to update the pending users as well
+      if (activeTab !== 'pending') {
+        const pendingResponse = await axios.get('/admin/users/pending');
+        setPendingUsers(pendingResponse.data);
+      }
+    } catch (error) {
+      console.error(`Error rejecting user ${userId}:`, error);
+      setError(`Terjadi kesalahan saat menolak pengguna. Silakan coba lagi nanti.`);
+    }
+  };
+  
+  // Fungsi untuk toggle status aktif user (suspend/activate)
+  const handleToggleStatus = async (userId) => {
+    try {
+      await axios.post(`/admin/users/${userId}/toggle-status`);
+      
+      // Refresh data
+      await fetchTabData(activeTab);
+    } catch (error) {
+      console.error(`Error toggling status for user ${userId}:`, error);
+      setError(`Terjadi kesalahan saat mengubah status pengguna. Silakan coba lagi nanti.`);
     }
   };
 
@@ -410,7 +416,8 @@ export default function Dashboard() {
                             <UserApprovalCard 
                               key={user.id} 
                               user={user} 
-                              onApprove={() => handleUserAction(user.id, 'approve')}
+                              onApprove={() => handleApproveUser(user.id)}
+                              onReject={() => handleRejectUser(user.id)}
                             />
                           ))
                         ) : (
@@ -424,27 +431,69 @@ export default function Dashboard() {
                     </div>
                   )}
                   
-                  {/* Kode untuk tab lainnya tidak berubah */}
                   {activeTab === 'farmers' && (
                     <div className="rounded-lg bg-white p-3">
-                      {/* Konten untuk tab Farmers */}
-                      {/* ... */}
+                      <div className="space-y-4">
+                        {currentItems.length > 0 ? (
+                          currentItems.map((farmer) => (
+                            <UserCard 
+                              key={farmer.id} 
+                              user={farmer} 
+                              onToggleStatus={() => handleToggleStatus(farmer.id)}
+                            />
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-neutral">
+                            {searchTerm ? 'Tidak ada hasil yang ditemukan' : 'Tidak ada petani terdaftar saat ini'}
+                          </div>
+                        )}
+                      </div>
                       <Pagination />
                     </div>
                   )}
                   
                   {activeTab === 'doctors' && (
                     <div className="rounded-lg bg-white p-3">
-                      {/* Konten untuk tab Doctors */}
-                      {/* ... */}
+                      <div className="space-y-4">
+                        {currentItems.length > 0 ? (
+                          currentItems.map((doctor) => (
+                            <UserCard 
+                              key={doctor.id} 
+                              user={doctor}
+                              onToggleStatus={() => handleToggleStatus(doctor.id)}
+                              onApprove={doctor.status !== 'verified' ? () => handleApproveUser(doctor.id) : null}
+                              onReject={doctor.status !== 'rejected' ? () => handleRejectUser(doctor.id) : null}
+                            />
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-neutral">
+                            {searchTerm ? 'Tidak ada hasil yang ditemukan' : 'Tidak ada dokter terdaftar saat ini'}
+                          </div>
+                        )}
+                      </div>
                       <Pagination />
                     </div>
                   )}
                   
                   {activeTab === 'shops' && (
                     <div className="rounded-lg bg-white p-3">
-                      {/* Konten untuk tab Shops */}
-                      {/* ... */}
+                      <div className="space-y-4">
+                        {currentItems.length > 0 ? (
+                          currentItems.map((shop) => (
+                            <UserCard 
+                              key={shop.id} 
+                              user={shop}
+                              onToggleStatus={() => handleToggleStatus(shop.id)}
+                              onApprove={shop.status !== 'verified' ? () => handleApproveUser(shop.id) : null}
+                              onReject={shop.status !== 'rejected' ? () => handleRejectUser(shop.id) : null}
+                            />
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-neutral">
+                            {searchTerm ? 'Tidak ada hasil yang ditemukan' : 'Tidak ada toko terdaftar saat ini'}
+                          </div>
+                        )}
+                      </div>
                       <Pagination />
                     </div>
                   )}

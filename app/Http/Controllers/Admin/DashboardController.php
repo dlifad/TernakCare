@@ -3,104 +3,104 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Doctor;
+use App\Models\Farmer;
 use App\Models\Shop;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Http\JsonResponse;
+
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function dashboard()
     {
-        $stats = [
-            'totalFarmers' => User::where('role', 'farmer')->count(),
-            'totalDoctors' => User::where('role', 'doctor')->count(),
-            'totalShops' => User::where('role', 'shop')->count(),
-            'pendingApprovals' => $this->countPendingApprovals(),
-        ];
-
-        return Inertia::render('Admin/Dashboard', [
-            'stats' => $stats
-        ]);
+        return Inertia::render('Admin/Dashboard');
     }
 
     public function getStats()
     {
         $stats = [
-            'totalFarmers' => User::where('role', 'farmer')->count(),
-            'totalDoctors' => User::where('role', 'doctor')->count(),
-            'totalShops' => User::where('role', 'shop')->count(),
-            'pendingApprovals' => $this->countPendingApprovals(),
+            'totalFarmers' => Farmer::count(),
+            'totalDoctors' => Doctor::count(),
+            'totalShops' => Shop::count(),
+            'pendingApprovals' =>
+            User::whereHas('doctor', function ($query) {
+                $query->where('status', 'pending');
+            })
+                ->orWhereHas('shop', function ($query) {
+                    $query->where('status', 'pending');
+                })
+                ->count()
         ];
 
         return response()->json($stats);
     }
 
-    private function countPendingApprovals()
-    {
-        $pendingDoctors = Doctor::where('status', 'pending')->count();
-        $pendingShops = Shop::where('status', 'pending')->count();
-        
-        return $pendingDoctors + $pendingShops;
-    }
-
     public function getPendingUsers()
     {
-        // Mendapatkan dokter dengan status pending
-        $pendingDoctors = Doctor::where('status', 'pending')
-            ->join('users', 'doctors.user_id', '=', 'users.id')
-            ->select('users.id', 'users.name', 'users.email', 'users.role', 'users.created_at')
-            ->get();
-
-        // Mendapatkan toko dengan status pending
-        $pendingShops = Shop::where('status', 'pending')
-            ->join('users', 'shops.user_id', '=', 'users.id')
-            ->select('users.id', 'users.name', 'users.email', 'users.role', 'users.created_at')
-            ->get();
-
-        // Menggabungkan hasil
-        $pendingUsers = $pendingDoctors->merge($pendingShops);
+        $pendingUsers = User::with(['doctor', 'shop'])
+            ->where(function ($query) {
+                $query->whereHas('doctor', function ($q) {
+                    $q->where('status', 'pending');
+                })
+                    ->orWhereHas('shop', function ($q) {
+                        $q->where('status', 'pending');
+                    });
+            })
+            ->get()
+            ->map(function ($user) {
+                $role = $user->doctor ? 'doctor' : ($user->shop ? 'shop' : 'unknown');
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $role,
+                    'created_at' => $user->created_at,
+                    'profile' => $role === 'doctor' ? $user->doctor : ($role === 'shop' ? $user->shop : null)
+                ];
+            });
 
         return response()->json($pendingUsers);
     }
 
     public function getFarmers()
     {
-        $farmers = User::where('role', 'farmer')
-            ->select('id', 'name', 'email', 'created_at', 'is_active')
+        $farmers = User::whereHas('farmer')
+            ->with('farmer')
             ->get()
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'created_at' => $user->created_at->format('Y-m-d H:i:s'),
-                    'status' => $user->is_active ? 'Active' : 'Suspended'
+                    'isActive' => $user->is_active,
+                    'created_at' => $user->created_at,
+                    'role' => 'farmer', // ✅ Tambahkan ini
+                    'farmer' => $user->farmer
                 ];
             });
 
         return response()->json($farmers);
     }
 
+
     public function getDoctors()
     {
-        $doctors = User::where('role', 'doctor')
-            ->with('doctor') // Mengasumsikan ada relasi 'doctor' di model User
-            ->select('id', 'name', 'email', 'created_at', 'is_active')
+        $doctors = User::whereHas('doctor')
+            ->with('doctor')
             ->get()
             ->map(function ($user) {
-                $doctorProfile = $user->doctor;
-                $specialty = $doctorProfile ? $doctorProfile->specialty ?? 'General' : 'General';
-                $status = $doctorProfile ? $doctorProfile->status : ($user->is_active ? 'active' : 'suspended');
-
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'specialty' => $specialty,
-                    'status' => $status
+                    'isActive' => $user->is_active,
+                    'status' => $user->doctor->status,
+                    'specialty' => $user->doctor->specialty ?? '',
+                    'role' => 'doctor',
+                    'created_at' => $user->created_at
                 ];
             });
 
@@ -109,116 +109,87 @@ class DashboardController extends Controller
 
     public function getShops()
     {
-        $shops = User::where('role', 'shop')
-            ->with(['shop', 'shop.products']) // Mengasumsikan ada relasi 'shop' dan 'shop.products'
-            ->select('id', 'name', 'email', 'created_at', 'is_active')
+        $shops = User::whereHas('shop')
+            ->with('shop')
             ->get()
             ->map(function ($user) {
-                $shopProfile = $user->shop;
-                $productCount = $shopProfile && isset($shopProfile->products) ? $shopProfile->products->count() : 0;
-                $status = $shopProfile ? $shopProfile->status : ($user->is_active ? 'active' : 'suspended');
-
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'product_count' => $productCount,
-                    'status' => $status
+                    'isActive' => $user->is_active,
+                    'status' => $user->shop->status,
+                    'role' => 'shop',
+                    'created_at' => $user->created_at
                 ];
             });
 
         return response()->json($shops);
     }
 
+    public function userDetail($id)
+    {
+        $user = User::with(['doctor', 'shop', 'farmer'])->findOrFail($id);
+        return Inertia::render('Admin/UserDetail', [
+            'user' => $user
+        ]);
+    }
+
     public function approveUser($id)
     {
-        $user = User::findOrFail($id);
+        $user = User::with(['doctor', 'shop'])->findOrFail($id);
 
-        if ($user->role === 'doctor') {
-            $doctor = Doctor::where('user_id', $user->id)->first();
-            if ($doctor) {
-                $doctor->status = 'active';
-                $doctor->save();
-            }
-        } elseif ($user->role === 'shop') {
-            $shop = Shop::where('user_id', $user->id)->first();
-            if ($shop) {
-                $shop->status = 'active';
-                $shop->save();
-            }
+        if ($user->doctor) {
+            $user->doctor->update(['status' => 'verified']);
+        } elseif ($user->shop) {
+            $user->shop->update(['status' => 'verified']);
         }
 
-        $user->is_active = 1;
-        $user->save();
-
-        return response()->json(['success' => true, 'message' => 'User approved successfully.']);
+        return response()->json(['message' => 'User approved successfully']);
     }
 
-    public function suspendUser($id)
+    public function rejectUser($id)
     {
-        $user = User::findOrFail($id);
+        $user = User::with(['doctor', 'shop'])->findOrFail($id);
 
-        if ($user->role === 'doctor') {
-            $doctor = Doctor::where('user_id', $user->id)->first();
-            if ($doctor) {
-                $doctor->status = 'suspended';
-                $doctor->save();
-            }
-        } elseif ($user->role === 'shop') {
-            $shop = Shop::where('user_id', $user->id)->first();
-            if ($shop) {
-                $shop->status = 'suspended';
-                $shop->save();
-            }
+        if ($user->doctor) {
+            $user->doctor->update(['status' => 'rejected']);
+        } elseif ($user->shop) {
+            $user->shop->update(['status' => 'rejected']);
         }
 
-        $user->is_active = 0;
-        $user->save();
-
-        return response()->json(['success' => true, 'message' => 'User suspended successfully.']);
+        return response()->json(['message' => 'User rejected successfully']);
     }
 
-    public function activateUser(User $user)
+    // public function toggleActiveStatus($id)
+    // {
+    //     $user = User::findOrFail($id);
+    //     $user->update(['isActive' => !$user->isActive]);
+
+    //     return response()->json([
+    //         'message' => $user->isActive ? 'User activated successfully' : 'User suspended successfully'
+    //     ]);
+    // }
+
+    public function toggleActive(Request $request, $id): JsonResponse
     {
-        if ($user->role === 'doctor') {
-            $doctor = Doctor::where('user_id', $user->id)->first();
-            if ($doctor) {
-                $doctor->status = 'active';
-                $doctor->save();
-            }
-        } elseif ($user->role === 'shop') {
-            $shop = Shop::where('user_id', $user->id)->first();
-            if ($shop) {
-                $shop->status = 'active';
-                $shop->save();
-            }
+        $request->validate(['isActive' => 'required|boolean']);
+
+        try {
+            $user = User::findOrFail($id);
+            $user->is_active = $request->isActive;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully.',
+                'isActive' => $user->is_active,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user status.',
+            ], 500);
         }
-
-        $user->is_active = 1;
-        $user->save();
-
-        return response()->json(['success' => true, 'message' => 'User activated successfully.']);
-    }
-
-    public function deactivateUser(User $user)
-    {
-        if ($user->role === 'doctor') {
-            $doctor = Doctor::where('user_id', $user->id)->first();
-            if ($doctor) {
-                $doctor->status = 'suspended';
-                $doctor->save();
-            }
-        } elseif ($user->role === 'shop') {
-            $shop = Shop::where('user_id', $user->id)->first();
-            if ($shop) {
-                $shop->status = 'suspended';
-                $shop->save();
-            }
-        }
-
-        $user->is_active = 0;
-        $user->save();
-
-        return response()->json(['success' => true, 'message' => 'User deactivated successfully.']);
     }
 }

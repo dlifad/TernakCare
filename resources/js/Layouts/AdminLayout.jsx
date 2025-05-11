@@ -29,11 +29,6 @@ export default function AdminLayout({ children }) {
           <div>
             <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-light">
               <Link href="/" className="flex items-center">
-                <img 
-                  src="/api/placeholder/40/40" 
-                  alt="Logo" 
-                  className="h-8 w-8" 
-                />
                 <span className="ml-2 text-lg font-bold text-primary">TernakCare</span>
               </Link>
               <button 

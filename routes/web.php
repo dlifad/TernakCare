@@ -56,13 +56,13 @@ Route::middleware('guest')->group(function () {
     // Halaman registrasi
     Route::get('/register', [AuthenticatedSessionController::class, 'createFarmer'])->name('register');
     Route::post('/register', [AuthenticatedSessionController::class, 'storeFarmer']);
-    
+
     Route::get('/register/doctor', [AuthenticatedSessionController::class, 'createDoctor'])->name('register.doctor');
     Route::post('/register/doctor', [AuthenticatedSessionController::class, 'storeDoctor']);
-    
+
     Route::get('/register/shop', [AuthenticatedSessionController::class, 'createShop'])->name('register.shop');
     Route::post('/register/shop', [AuthenticatedSessionController::class, 'storeShop']);
-    
+
     // Password reset
     Route::get('forgot-password', [AuthenticatedSessionController::class, 'forgotPassword'])
         ->name('password.request');
@@ -103,7 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard berdasarkan peran
     Route::get('/dashboard', function () {
         $user = Auth::user();
-        
+
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         } elseif ($user->role === 'doctor') {
@@ -114,7 +114,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('farmer.home');
         }
     })->name('dashboard');
-    
+
     // Profil
     Route::get('/profile', [MainProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [MainProfileController::class, 'update'])->name('profile.update');
@@ -122,29 +122,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Rute admin
-Route::middleware(['auth', 'role:admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    
-    // Verifikasi Pengguna
-    // Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
-    // Route::post('/verification/doctor/{id}/approve', [VerificationController::class, 'approveDoctor'])
-    //     ->name('verification.approve.doctor');
-    // Route::post('/verification/doctor/{id}/reject', [VerificationController::class, 'rejectDoctor'])
-    //     ->name('verification.reject.doctor');
-    // Route::post('/verification/shop/{id}/approve', [VerificationController::class, 'approveShop'])
-    //     ->name('verification.approve.shop');
-    // Route::post('/verification/shop/{id}/reject', [VerificationController::class, 'rejectShop'])
-    //     ->name('verification.reject.shop');
-        
-    // Mengelola User
-    Route::patch('/users/{user}/activate', [AdminDashboardController::class, 'activateUser'])->name('users.activate');
-    Route::patch('/users/{user}/deactivate', [AdminDashboardController::class, 'deactivateUser'])->name('users.deactivate');
+// Admin routes
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    // Dashboard view
+    Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])->name('admin.dashboard');
+
+    // API endpoints for admin dashboard
+    Route::get('/dashboard/stats', [AdminDashboardController::class, 'getStats']);
+    Route::get('/users/pending', [AdminDashboardController::class, 'getPendingUsers']);
+    Route::get('/users/farmers', [AdminDashboardController::class, 'getFarmers']);
+    Route::get('/users/doctors', [AdminDashboardController::class, 'getDoctors']);
+    Route::get('/users/shops', [AdminDashboardController::class, 'getShops']);
+
+    // Detail & action
+    Route::get('/users/{id}', [AdminDashboardController::class, 'userDetail'])->name('admin.user.detail');
+    Route::post('/users/{id}/approve', [AdminDashboardController::class, 'approveUser']);
+    Route::post('/users/{id}/reject', [AdminDashboardController::class, 'rejectUser']);
+
+    // ✅ Taruh di sini saja agar rapi
+    Route::post('/users/{id}/toggle-status', [AdminDashboardController::class, 'toggleActive'])
+        ->name('admin.users.toggle-status');
 });
+
 
 // Rute dokter
 Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('doctor.')->group(function () {
     Route::get('/dashboard', [DoctorDashboardController::class, 'index'])->name('dashboard');
-    
+
     // Konsultasi
     Route::resource('consultations', DoctorConsultationController::class);
     Route::patch('/consultations/{consultation}/approve', [DoctorConsultationController::class, 'approve'])->name('consultations.approve');
@@ -152,7 +156,7 @@ Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('
     Route::patch('/consultations/{consultation}/complete', [DoctorConsultationController::class, 'complete'])->name('consultations.complete');
     Route::get('/consultations/{consultation}/chat', [DoctorConsultationController::class, 'chat'])->name('consultations.chat');
     Route::post('/consultations/{consultation}/chat', [DoctorConsultationController::class, 'sendMessage'])->name('consultations.chat.send');
-    
+
     // Riwayat dan Profil
     Route::get('/history', [DoctorHistoryController::class, 'index'])->name('history');
     Route::get('/profile', [DoctorProfileController::class, 'edit'])->name('profile.edit');
@@ -162,7 +166,7 @@ Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('
 // Rute toko
 Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop.')->group(function () {
     Route::get('/dashboard', [ShopDashboardController::class, 'index'])->name('dashboard');
-    
+
     // Manajemen Produk
     Route::prefix('manageproduct')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
@@ -173,12 +177,12 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
         Route::put('/{product}', [ProductController::class, 'update'])->name('update');
         Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
     });
-    
+
     // Transaksi
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::patch('/transactions/{transaction}/update-status', [TransactionController::class, 'updateStatus'])->name('transactions.update-status');
-    
+
     // Riwayat dan Profil
     Route::get('/history', [ShopHistoryController::class, 'index'])->name('history');
     Route::get('/profile', [ShopProfileController::class, 'edit'])->name('profile.edit');
@@ -189,12 +193,12 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
 Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('farmer.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'farmerDashboard'])->name('dashboard');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
-    
+
     // Konsultasi
     Route::resource('consultations', ConsultationController::class);
     Route::get('/consultations/{consultation}/chat', [ConsultationController::class, 'chat'])->name('consultations.chat');
     Route::post('/consultations/{consultation}/chat', [ConsultationController::class, 'sendMessage'])->name('consultations.chat.send');
-    
+
     // Marketplace
     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
     Route::get('/marketplace/shops/{shop}', [MarketplaceController::class, 'shopDetail'])->name('marketplace.shop');
@@ -203,12 +207,12 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
     Route::get('/marketplace/cart', [MarketplaceController::class, 'viewCart'])->name('marketplace.cart');
     Route::delete('/marketplace/cart/{productId}', [MarketplaceController::class, 'removeFromCart'])->name('marketplace.cart.remove');
     Route::post('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
-    
+
     // Artikel dan Aktivitas
     Route::get('/articles', [ArticleController::class, 'index'])->name('articles');
     Route::get('/articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity');
-    
+
     // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
