@@ -1,7 +1,7 @@
 // resources/js/Components/Card.jsx
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import Button from '@/Components/LandingPage/Button';
+import Button from '@/Components/Common/Button';
 
 export default function Card({ 
     title, 

@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, Head } from '@inertiajs/react';
 
 // Import Components
-import Button from '@/Components/LandingPage/Button';
+import Button from '@/Components/Common/Button';
 import Card from '@/Components/LandingPage/Card';
 import SearchInput from '@/Components/LandingPage/SearchInput';
 import Newsletter from '@/Components/LandingPage/Newsletter';

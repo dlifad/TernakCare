@@ -93,9 +93,10 @@ Route::get('/awaiting-verification', [AuthenticatedSessionController::class, 'aw
     ->name('awaiting.verification');
 
 // Logout
-Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
 
 // Rute yang memerlukan autentikasi
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -121,19 +122,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Rute admin
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
     // Verifikasi Pengguna
-    Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
-    Route::post('/verification/doctor/{id}/approve', [VerificationController::class, 'approveDoctor'])
-        ->name('verification.approve.doctor');
-    Route::post('/verification/doctor/{id}/reject', [VerificationController::class, 'rejectDoctor'])
-        ->name('verification.reject.doctor');
-    Route::post('/verification/shop/{id}/approve', [VerificationController::class, 'approveShop'])
-        ->name('verification.approve.shop');
-    Route::post('/verification/shop/{id}/reject', [VerificationController::class, 'rejectShop'])
-        ->name('verification.reject.shop');
+    // Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
+    // Route::post('/verification/doctor/{id}/approve', [VerificationController::class, 'approveDoctor'])
+    //     ->name('verification.approve.doctor');
+    // Route::post('/verification/doctor/{id}/reject', [VerificationController::class, 'rejectDoctor'])
+    //     ->name('verification.reject.doctor');
+    // Route::post('/verification/shop/{id}/approve', [VerificationController::class, 'approveShop'])
+    //     ->name('verification.approve.shop');
+    // Route::post('/verification/shop/{id}/reject', [VerificationController::class, 'rejectShop'])
+    //     ->name('verification.reject.shop');
         
     // Mengelola User
     Route::patch('/users/{user}/activate', [AdminDashboardController::class, 'activateUser'])->name('users.activate');
@@ -160,7 +161,7 @@ Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('
 
 // Rute toko
 Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop.')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [ShopDashboardController::class, 'index'])->name('dashboard');
     
     // Manajemen Produk
     Route::prefix('manageproduct')->name('products.')->group(function () {

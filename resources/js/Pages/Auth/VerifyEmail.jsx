@@ -46,10 +46,11 @@ export default function VerifyEmail({ status }) {
                             href={route('logout')}
                             method="post"
                             as="button"
-                            className="text-sm text-gray-600 hover:text-gray-900 underline"
                         >
-                            Keluar
-                        </Link>
+                            <Button variant="outline" type="submit">
+                                Keluar
+                            </Button>
+                        </Link>                   
                     </div>
                 </form>
             </div>

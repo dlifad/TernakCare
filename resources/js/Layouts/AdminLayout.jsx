@@ -7,7 +7,7 @@ export default function AdminLayout({ children }) {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, current: true },
-    { name: 'User Management', href: '/admin/users', icon: Users, current: false },
+    // { name: 'Verification User', href: '/admin/verification', icon: Users, current: false },
   ];
 
   return (

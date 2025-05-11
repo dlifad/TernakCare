@@ -55,10 +55,10 @@ class AuthenticatedSessionController extends Controller
 
             if ($doctor && $doctor->status === 'pending') {
                 Auth::logout();
-                return redirect()->route('login')->with('status', 'Email Anda sudah diverifikasi, tetapi pendaftaran dokter Anda masih sedang diverifikasi oleh admin.');
+                return redirect()->route('login')->with('status', 'Pendaftaran akun dokter Anda sedang diverifikasi.');
             } elseif ($doctor && $doctor->status === 'rejected') {
                 Auth::logout();
-                return redirect()->route('login')->with('status', 'Maaf, pendaftaran dokter Anda ditolak oleh admin.');
+                return redirect()->route('login')->with('status', 'Maaf, pendaftaran dokter Anda ditolak.');
             }
         }
 
@@ -68,10 +68,10 @@ class AuthenticatedSessionController extends Controller
 
             if ($shop && $shop->status === 'pending') {
                 Auth::logout();
-                return redirect()->route('login')->with('status', 'Email Anda sudah diverifikasi, tetapi pendaftaran toko Anda masih sedang diverifikasi oleh admin.');
+                return redirect()->route('login')->with('status', 'Pendaftaran akun toko Anda sedang diverifikasi.');
             } elseif ($shop && $shop->status === 'rejected') {
                 Auth::logout();
-                return redirect()->route('login')->with('status', 'Maaf, pendaftaran toko Anda ditolak oleh admin.');
+                return redirect()->route('login')->with('status', 'Maaf, pendaftaran toko Anda ditolak.');
             }
         }
 

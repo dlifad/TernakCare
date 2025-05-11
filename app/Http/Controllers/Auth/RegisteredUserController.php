@@ -74,7 +74,7 @@ class RegisteredUserController extends Controller
         if (!$user->is_active) {
             Auth::logout();
             return redirect()->route('login')
-                ->with('status', 'Your account is pending approval. Please wait for admin confirmation.');
+                ->with('status', 'Pendaftaran akun anda berhasil. Silahkan login!');
         }
 
         return redirect(RouteServiceProvider::HOME);

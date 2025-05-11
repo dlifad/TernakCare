@@ -19,20 +19,23 @@ class ApprovedUser
     {
         $user = $request->user();
 
+        // 🚩 Jangan redirect lagi kalau sudah di halaman awaiting verification
+        if ($request->routeIs('awaiting.verification')) {
+            return $next($request);
+        }
+
         if (!$user || !$user->is_approved) {
-            if ($user->role === 'doctor' || $user->role === 'shop') {
+            if ($user && ($user->role === 'doctor' || $user->role === 'shop')) {
                 return redirect()->route('awaiting.verification', ['userType' => $user->role]);
             }
-            
+
             return redirect('/')->with('error', 'Akun Anda belum disetujui oleh admin.');
         }
 
-        // Jika role adalah dokter, periksa status dokter
         if ($user->role === 'doctor' && (!$user->doctor || $user->doctor->status !== 'verified')) {
             return redirect()->route('awaiting.verification', ['userType' => 'doctor']);
         }
 
-        // Jika role adalah toko, periksa status toko
         if ($user->role === 'shop' && (!$user->shop || $user->shop->status !== 'verified')) {
             return redirect()->route('awaiting.verification', ['userType' => 'shop']);
         }

@@ -4,7 +4,6 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 +---Http
 |   +---Controllers
 |   |   |   ArticleController.php
-|   |   |   AuthController.php
 |   |   |   ConsultationController.php
 |   |   |   Controller.php
 |   |   |   DashboardController.php
@@ -17,7 +16,6 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   
 |   |   +---Admin
 |   |   |       DashboardController.php
-|   |   |       VerificationController.php
 |   |   |       
 |   |   +---Auth
 |   |   |       AuthenticatedSessionController.php
@@ -45,12 +43,14 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |       ProfileController.php
 |   |   |       
 |   |   \---Shop
+|   |           DashboardController.php
 |   |           HistoryController.php
 |   |           ProductController.php
 |   |           ProfileController.php
 |   |           TransactionController.php
 |   |           
 |   +---Middleware
+|   |       ApprovedUser.php
 |   |       CheckRole.php
 |   |       CheckUserRole.php
 |   |       HandleInertiaRequests.php
@@ -156,6 +156,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   +---Common
 |   |   |       Alert.jsx
 |   |   |       Button.jsx
+|   |   |       Buttton.jsx
 |   |   |       Card.jsx
 |   |   |       Footer.jsx
 |   |   |       InputError.jsx
@@ -175,7 +176,6 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |       MarketplaceCard.jsx
 |   |   |       
 |   |   +---LandingPage
-|   |   |       Button.jsx
 |   |   |       Card.jsx
 |   |   |       Newsletter.jsx
 |   |   |       SearchInput.jsx
@@ -201,11 +201,8 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   Welcome.jsx
 |   |   |   
 |   |   +---Admin
-|   |   |   |   Dashboard.jsx
-|   |   |   |   
-|   |   |   \---Verification
-|   |   |           Index.js
-|   |   |           
+|   |   |       Dashboard.jsx
+|   |   |       
 |   |   +---Auth
 |   |   |       AwaitingVerification.jsx
 |   |   |       ConfirmPassword.jsx

@@ -5,6 +5,7 @@
 import React from 'react';
 import { Head, Link } from "@inertiajs/react";
 import AuthLayout from '@/Layouts/AuthLayout';
+import Button from '@/Components/Common/Button';
 
 export default function AwaitingVerification({ userType }) {
     return (
@@ -47,9 +48,10 @@ export default function AwaitingVerification({ userType }) {
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
                     >
-                        Kembali ke Halaman Login
+                        <Button variant="primary" type="submit">
+                            Kembali
+                        </Button>
                     </Link>
                 </div>
             </div>

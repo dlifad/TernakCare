@@ -61,6 +61,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Shop::class);
     }
 
+    public function farmer()
+    {
+        return $this->hasOne(Farmer::class);
+    }
+
+
     // Role checkers
     public function isFarmer()
     {

@@ -27,11 +27,12 @@ export default function Login({ status }) {
 
         if (status) {
             return (
-                <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
                     {status}
                 </div>
             );
         }
+
         
         // If there are login errors (from AuthController)
         if (errors.email || errors.password || errors.general) {

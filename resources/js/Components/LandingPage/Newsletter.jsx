@@ -1,6 +1,6 @@
 // resources/js/Components/Newsletter.jsx
 import React, { useState } from 'react';
-import Button from '@/Components/LandingPage/Button';
+import Button from '@/Components/Common/Button';
 
 export default function Newsletter({ className = '' }) {
     const [email, setEmail] = useState('');
