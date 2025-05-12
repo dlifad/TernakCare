@@ -4,17 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class Article extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'user_id',
         'title',
@@ -23,44 +17,33 @@ class Article extends Model
         'featured_image',
         'category',
         'is_published',
-        'featured',
+        'featured'
     ];
-    
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
         'is_published' => 'boolean',
+        'featured' => 'boolean',
     ];
 
-    /**
-     * Boot function from Laravel.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-        
-        static::creating(function ($article) {
-            if (empty($article->slug)) {
-                $article->slug = Str::slug($article->title);
-            }
-        });
-
-        static::updating(function ($article) {
-            if ($article->isDirty('title') && empty($article->slug)) {
-                $article->slug = Str::slug($article->title);
-            }
-        });
-    }
-
-    /**
-     * Get the user that owns the article
-     */
+    // Relasi dengan user
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Accessor untuk format gambar
+    public function getFeaturedImageUrlAttribute()
+    {
+        if ($this->featured_image) {
+            return asset('storage/' . $this->featured_image);
+        }
+        
+        return asset('images/default-article.jpg');
+    }
+
+    // Accessor untuk mempersingkat konten
+    public function getExcerptAttribute()
+    {
+        return \Str::limit(strip_tags($this->content), 150);
     }
 }

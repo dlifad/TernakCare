@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
-import { Users, LayoutDashboard, LogOut, Menu, X, UserCircle } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, Menu, X, UserCircle, FileText } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, current: true },
-    // { name: 'Verification User', href: '/admin/verification', icon: Users, current: false },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, current: window.location.pathname.includes('/admin/dashboard') },
+    { name: 'Article', href: '/admin/articles', icon: FileText, current: window.location.pathname.includes('/admin/articles') },
   ];
 
   return (

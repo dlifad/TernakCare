@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { User, Mail, Phone, MapPin, Camera, Save, X, Lock } from 'lucide-react';
 import FarmerLayout from '@/Layouts/FarmerLayout';
-import Button from '@/Components/Common/Button';
 import Alert from '@/Components/Common/Alert';
 
-// New form components (similar to the shop profile)
+// Form components
 const TextInput = ({ id, label, type = 'text', value, onChange, icon, error, ...props }) => (
   <div className="space-y-1">
     <label htmlFor={id} className="block text-sm font-medium text-neutral-dark">
@@ -119,6 +118,8 @@ export default function Profile({ auth }) {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  // Tambahkan state terpisah untuk menyimpan URL foto saat ini
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState('/storage/assets/default-avatar.png');
 
   // Form Profile
   const { data, setData, patch, processing, errors, reset } = useForm({
@@ -145,8 +146,13 @@ export default function Profile({ auth }) {
         phone: auth.user.phone || '',
         address: auth.user.address || '',
         photo: null,
-        photo_url: auth.user.photo_url || '/api/placeholder/100/100',
+        photo_url: auth.user.photo_url || '',
       });
+      
+      // Update currentPhotoUrl jika ada
+      if (auth.user.photo_url) {
+        setCurrentPhotoUrl(auth.user.photo_url);
+      }
     }
   }, [auth]);
 
@@ -161,18 +167,66 @@ export default function Profile({ auth }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    patch(route('farmer.profile.update'), {
-      onSuccess: () => {
-        setIsEditing(false);
-        setSuccessMessage('Profil berhasil diperbarui');
-        setTimeout(() => setSuccessMessage(''), 3000);
-        setPhotoPreview(null);
-      },
+    // Gunakan FormData untuk upload file
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('email', data.email);
+    formData.append('phone', data.phone || '');
+    formData.append('address', data.address || '');
+    
+    // Hanya append photo jika ada file baru
+    if (data.photo) {
+      formData.append('photo', data.photo);
+    }
+
+    // Gunakan axios langsung alih-alih patch dari Inertia
+    window.axios.post(route('farmer.profile.update'), formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-HTTP-Method-Override': 'PATCH'
+      }
+    })
+    .then(response => {
+      setIsEditing(false);
+      setSuccessMessage('Profil berhasil diperbarui');
+      
+      // Update currentPhotoUrl jika ada di response
+      if (response.data.user?.photo_url) {
+        setCurrentPhotoUrl(response.data.user.photo_url);
+      }
+      
+      // Update form data dengan data terbaru
+      setData({
+        name: response.data.user.name || '',
+        email: response.data.user.email || '',
+        phone: response.data.user.phone || '',
+        address: response.data.user.address || '',
+        photo: null,
+        photo_url: response.data.user.photo_url || '',
+      });
+      
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setPhotoPreview(null);
+    })
+    .catch(error => {
+      console.error('Error updating profile:', error);
+      // Handle validasi error jika ada
+      if (error.response && error.response.data.errors) {
+        // Set errors secara manual
+      }
     });
   };
 
   const cancelEdit = () => {
     reset();
+    setData({
+      name: auth.user.name || '',
+      email: auth.user.email || '',
+      phone: auth.user.phone || '',
+      address: auth.user.address || '',
+      photo: null,
+      photo_url: auth.user.photo_url || '',
+    });
     setIsEditing(false);
     setPhotoPreview(null);
   };
@@ -203,6 +257,16 @@ export default function Profile({ auth }) {
   const closePasswordModal = () => {
     setShowPasswordModal(false);
     passwordForm.reset();
+  };
+
+  // Fungsi untuk menampilkan foto yang benar
+  const getPhotoUrl = () => {
+    if (photoPreview) {
+      return photoPreview;
+    }
+    
+    // Gunakan URL foto saat ini dari state lokal
+    return currentPhotoUrl || '/storage/assets/default-avatar.png';
   };
 
   return (
@@ -265,9 +329,13 @@ export default function Profile({ auth }) {
               <div className="relative mb-4 sm:mb-0 sm:mr-6">
                 <div className="w-24 h-24 bg-primary-light text-primary border-4 border-white rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden">
                   <img 
-                    src={photoPreview || data.photo_url}
+                    src={getPhotoUrl()}
                     alt="Foto Profil"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/storage/assets/default-avatar.png';
+                    }}
                   />
                 </div>
                 {isEditing && (
@@ -340,6 +408,7 @@ export default function Profile({ auth }) {
                     onChange={e => setData('name', e.target.value)}
                     icon={<User size={18} className="text-neutral" />}
                     error={errors.name}
+                    required
                   />
                   
                   <TextInput
@@ -350,6 +419,7 @@ export default function Profile({ auth }) {
                     onChange={e => setData('email', e.target.value)}
                     icon={<Mail size={18} className="text-neutral" />}
                     error={errors.email}
+                    required
                   />
                   
                   <TextInput

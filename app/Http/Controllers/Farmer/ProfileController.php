@@ -19,7 +19,7 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
-        
+
         return Inertia::render('Farmer/Profile/Index', [
             'auth' => [
                 'user' => $user,
@@ -30,42 +30,74 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
+
     public function update(Request $request)
     {
-        $request->validate([
+        $user = Auth::user();
+
+        // Validasi input
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:15',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $user = $request->user();
-        
-        // Update user information
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->phone = $request->phone;
-        $user->address = $request->address;
+        // Update data user dasar
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->phone = $validated['phone'] ?? $user->phone;
+        $user->address = $validated['address'] ?? $user->address;
 
-        // Handle photo upload if included
-        if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-            if ($user->photo_path && Storage::disk('public')->exists($user->photo_path)) {
-                Storage::disk('public')->delete($user->photo_path);
+        // Jika ada foto baru, simpan dan update path di database
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+            // Hapus foto lama jika ada
+            if ($user->photo_path && Storage::exists('public/' . $user->photo_path)) {
+                Storage::delete('public/' . $user->photo_path);
             }
-            
-            // Store new photo
-            $path = $request->file('photo')->store('profile-photos', 'public');
-            $user->photo_path = $path;
-            $user->photo_url = url('storage/' . $path);
+
+            // Buat nama file yang unik dengan timestamp
+            $filename = time() . '_' . $request->file('photo')->getClientOriginalName();
+
+            // Simpan foto baru
+            $photoPath = $request->file('photo')->storeAs('profile_photos', $filename, 'public');
+            $user->photo_path = $photoPath;
+            $user->photo_url = url('storage/' . $photoPath); // Gunakan url() helper untuk URL lengkap
         }
 
         $user->save();
 
-        return back()->with('success', 'Profil berhasil diperbarui');
+        // Kembalikan dengan data yang diperbarui
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'photo_url' => $user->photo_url,
+            ]
+        ]);
     }
 
+    public function placeholder($width = 100, $height = 100)
+    {
+        // Buat placeholder image sederhana
+        $img = imagecreatetruecolor($width, $height);
+        $bgColor = imagecolorallocate($img, 240, 240, 240);
+        $textColor = imagecolorallocate($img, 100, 100, 100);
+
+        imagefill($img, 0, 0, $bgColor);
+        $text = $width . 'x' . $height;
+        imagestring($img, 5, ($width - strlen($text) * 5) / 2, ($height - 10) / 2, $text, $textColor);
+
+        header('Content-Type: image/png');
+        imagepng($img);
+        imagedestroy($img);
+        exit;
+    }
     /**
      * Update user password
      */

@@ -124,7 +124,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
       {/* Featured Articles */}
       <div className="my-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="font-heading text-xl font-semibold text-neutral-darkest">Artikel Terbaru</h2>
+          <h2 className="font-heading text-xl font-semibold text-neutral-darkest">Artikel Unggulan</h2>
           <Link href={route('farmer.articles')} className="text-primary hover:text-primary-dark text-sm font-medium flex items-center">
             Lihat Semua <ArrowRight className="ml-1 h-4 w-4" />
           </Link>

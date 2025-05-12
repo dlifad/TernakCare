@@ -36,6 +36,34 @@ export default function FarmerLayout({ user, children }) {
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
+  // Function to get photo URL with fallback
+// Perbaikan fungsi getPhotoUrl di FarmerLayout.jsx
+const getPhotoUrl = () => {
+  console.log('Trying to get photo URL for user:', user);
+  
+  // Gunakan photo_url langsung jika tersedia dan valid
+  if (user && user.photo_url && user.photo_url !== 'undefined' && user.photo_url !== 'null') {
+    console.log('Using complete photo_url:', user.photo_url);
+    // Jika photo_url sudah berupa URL lengkap (dimulai dengan http), gunakan langsung
+    if (user.photo_url.startsWith('http')) {
+      return user.photo_url;
+    }  
+    // Jika hanya path, tambahkan /storage/
+    return `/storage/${user.photo_url}`;
+  }
+  
+  // Cek photo_path sebagai alternatif
+  if (user && user.photo_path && user.photo_path !== 'undefined' && user.photo_path !== 'null') {
+    console.log('Using photo_path:', `/storage/${user.photo_path}`);
+    return `/storage/${user.photo_path}`;
+  }
+  
+  console.log('Using default avatar');
+  return '/storage/assets/default-avatar.png';
+};
+
+
+
   return (
     <div className="min-h-screen bg-neutral-lightest flex flex-col">
       {/* Top Navigation */}
@@ -135,12 +163,19 @@ export default function FarmerLayout({ user, children }) {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center focus:outline-none"
                 >
+                <div className="w-8 h-8 bg-primary-light text-primary border-2 border-white rounded-full flex items-center justify-center overflow-hidden">
                   <img 
-                    className="h-8 w-8 rounded-full object-cover border border-neutral-light" 
-                    src={user?.profile_photo_url || '/storage/images/default-avatar.png'} 
-                    alt="Profile"
+                    src={getPhotoUrl()}
+                    alt="Foto Profil"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.log('Image failed to load, using fallback');
+                      e.target.onerror = null;
+                      e.target.src = '/storage/assets/default-avatar.png';
+                    }}
                   />
-                  <span className="ml-2 text-sm font-medium text-neutral-darkest hidden sm:block">
+                </div>
+                                  <span className="ml-2 text-sm font-medium text-neutral-darkest hidden sm:block">
                     {user?.name}
                   </span>
                 </button>

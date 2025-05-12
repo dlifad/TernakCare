@@ -121,6 +121,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |       2025_05_09_183343_add_rejection_reason_to_doctors_and_shops_tables.php
 |       2025_05_09_185205_add_is_approved_to_users_table.php
 |       2025_05_11_040252_remove_is_approved_from_users_table.php
+|       2025_05_12_042558_add_photo_columns_to_users_table.php
 |       
 \---seeders
         AdminUserSeeder.php

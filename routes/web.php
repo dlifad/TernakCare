@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\VerificationController;
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 // use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
@@ -10,7 +10,7 @@ use App\Http\Controllers\Doctor\DashboardController as DoctorDashboardController
 use App\Http\Controllers\Doctor\HistoryController as DoctorHistoryController;
 use App\Http\Controllers\Doctor\ProfileController as DoctorProfileController;
 use App\Http\Controllers\Farmer\ActivityController;
-use App\Http\Controllers\Farmer\ArticleController;
+use App\Http\Controllers\Farmer\ArticleController as FarmerArticleController;
 use App\Http\Controllers\Farmer\ConsultationController;
 use App\Http\Controllers\Farmer\HomeController;
 use App\Http\Controllers\Farmer\MarketplaceController;
@@ -127,6 +127,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Dashboard view
     Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])->name('admin.dashboard');
 
+
     // API endpoints for admin dashboard
     Route::get('/dashboard/stats', [AdminDashboardController::class, 'getStats']);
     Route::get('/users/pending', [AdminDashboardController::class, 'getPendingUsers']);
@@ -142,6 +143,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // ✅ Taruh di sini saja agar rapi
     Route::post('/users/{id}/toggle-status', [AdminDashboardController::class, 'toggleActive'])
         ->name('admin.users.toggle-status');
+
+    // Article management routes
+    Route::resource('articles', AdminArticleController::class)->names('admin.articles');
+    Route::put('articles/{article}/toggle-featured', [AdminArticleController::class, 'toggleFeatured'])->name('admin.articles.toggle-featured');
+    Route::put('articles/{article}/toggle-published', [AdminArticleController::class, 'togglePublished'])->name('admin.articles.toggle-published');
 });
 
 
@@ -189,9 +195,9 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
     Route::patch('/profile', [ShopProfileController::class, 'update'])->name('profile.update');
 });
 
-// Rute petani
+// Rute peternak
 Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('farmer.')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'farmerDashboard'])->name('dashboard');
+    // Route::get('/dashboard', [DashboardController::class, 'farmerDashboard'])->name('dashboard');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     // Konsultasi
@@ -209,14 +215,25 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
     Route::post('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
 
     // Artikel dan Aktivitas
-    Route::get('/articles', [ArticleController::class, 'index'])->name('articles');
-    Route::get('/articles/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
+    Route::get('/artikel', [App\Http\Controllers\Farmer\ArticleController::class, 'index'])
+        ->name('articles')
+        ->middleware(['auth']);
+
+
+    // Rute untuk halaman detail artikel
+    Route::get('/artikel/{slug}', [App\Http\Controllers\Farmer\ArticleController::class, 'show'])
+        ->name('articles.show')
+        ->middleware(['auth']);
+
+
+
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity');
 
     // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.update-password');
+    Route::get('/placeholder/{width}/{height}', [ProfileController::class, 'placeholder']);
 });
 
 require __DIR__ . '/auth.php';
