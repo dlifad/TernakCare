@@ -26,6 +26,10 @@ export default function Button({
             "bg-warning hover:bg-yellow-600 focus:ring-yellow-300 text-white",
         neutral:
             "bg-neutral hover:bg-neutral-dark focus:ring-neutral-light text-white",
+        white: 
+            "bg-white text-gray-800 border border-gray-300 hover:bg-gray-100 focus:ring-gray-200",
+        black: 
+            "bg-black text-white border border-gray-800 hover:bg-gray-800 focus:ring-gray-700",
     };
 
     const sizeClasses = {

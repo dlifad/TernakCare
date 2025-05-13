@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Head } from "@inertiajs/react";
 import {
     MessageSquare,
@@ -7,16 +7,25 @@ import {
     Clock,
     Calendar,
     Search,
+    Star
 } from "lucide-react";
 import FarmerLayout from "@/Layouts/FarmerLayout";
 import ConsultationRequest from "@/Components/Farmer/ConsultationRequest";
 
-export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
-    const [consultationType, setConsultationType] = useState("chat");
+export default function Index({ auth, doctors, upcomingConsultations, consultationType: initialType }) {
+    const [consultationType, setConsultationType] = useState(initialType || "chat");
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterSpecialization, setFilterSpecialization] = useState("");
     const [showConsultationModal, setShowConsultationModal] = useState(false);
     const [selectedDoctor, setSelectedDoctor] = useState(null);
+
+
+
+    // Update URL ketika tipe konsultasi berubah (tanpa reload halaman)
+    useEffect(() => {
+        const url = new URL(window.location);
+        url.searchParams.set('type', consultationType);
+        window.history.pushState({}, '', url);
+    }, [consultationType]);
 
     const consultationTypeOptions = [
         { id: "chat", name: "Chat", icon: MessageSquare },
@@ -24,34 +33,25 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
         { id: "visit", name: "Kunjungan", icon: Map },
     ];
 
-    const specializations = [
-        { id: "", name: "Semua Spesialisasi" },
-        { id: "umum", name: "Dokter Hewan Umum" },
-        { id: "sapi", name: "Spesialis Sapi" },
-        { id: "unggas", name: "Spesialis Unggas" },
-        { id: "kambing", name: "Spesialis Kambing" },
-        { id: "domba", name: "Spesialis Domba" },
-    ];
-
-    // Filter doctors based on search and specialization
+    // Filter dokter berdasarkan pencarian
     const filteredDoctors = doctors?.filter((doctor) => {
-        const matchesSearch =
-            !searchTerm ||
-            doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.specialization
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase());
-
-        const matchesSpecialization =
-            !filterSpecialization ||
-            doctor.specialization === filterSpecialization;
-
-        return matchesSearch && matchesSpecialization;
+        const matchesSearch = !searchTerm || doctor.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
     });
+
+    console.log('Received doctors:', doctors);
+    console.log('Filtered doctors:', filteredDoctors);
 
     const handleDoctorSelect = (doctor) => {
         setSelectedDoctor(doctor);
         setShowConsultationModal(true);
+    };
+
+    // Handle perubahan tipe konsultasi
+    const handleConsultationTypeChange = (type) => {
+        setConsultationType(type);
+        // Redirect ke halaman yang sama dengan parameter query baru
+        window.location.href = route('farmer.consultations.index', { type });
     };
 
     return (
@@ -82,11 +82,7 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                             >
                                 <div className="flex items-center mb-3 md:mb-0">
                                     <img
-                                        src={
-                                            consultation.doctor
-                                                .profile_photo_url ||
-                                            "/storage/images/default-avatar.png"
-                                        }
+                                        src={consultation.doctor.profile_photo_url}
                                         alt={consultation.doctor.name}
                                         className="h-10 w-10 rounded-full object-cover mr-3"
                                     />
@@ -94,55 +90,59 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                                         <h3 className="font-medium text-neutral-darkest">
                                             {consultation.doctor.name}
                                         </h3>
-                                        <p className="text-sm text-neutral">
-                                            {consultation.doctor.specialization}
-                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex flex-col md:flex-row items-start md:items-center">
-                                    <div className="flex items-center mr-4 mb-2 md:mb-0">
-                                        <Calendar className="h-4 w-4 text-primary mr-1" />
-                                        <span className="text-sm text-neutral-dark">
-                                            {new Date(
-                                                consultation.scheduled_at,
-                                            ).toLocaleDateString("id-ID")}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center mr-4 mb-2 md:mb-0">
-                                        <Clock className="h-4 w-4 text-primary mr-1" />
-                                        <span className="text-sm text-neutral-dark">
-                                            {new Date(
-                                                consultation.scheduled_at,
-                                            ).toLocaleTimeString("id-ID", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </span>
-                                    </div>
+                                    {consultation.scheduled_at && (
+                                        <>
+                                            <div className="flex items-center mr-4 mb-2 md:mb-0">
+                                                <Calendar className="h-4 w-4 text-primary mr-1" />
+                                                <span className="text-sm text-neutral-dark">
+                                                    {new Date(
+                                                        consultation.scheduled_at
+                                                    ).toLocaleDateString("id-ID")}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center mr-4 mb-2 md:mb-0">
+                                                <Clock className="h-4 w-4 text-primary mr-1" />
+                                                <span className="text-sm text-neutral-dark">
+                                                    {new Date(
+                                                        consultation.scheduled_at
+                                                    ).toLocaleTimeString("id-ID", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
                                     <div className="flex items-center">
                                         <span
                                             className={`
-                      px-2 py-1 text-xs rounded-full
-                      ${
-                          consultation.type === "chat"
-                              ? "bg-info/10 text-info"
-                              : consultation.type === "video"
-                                ? "bg-primary/10 text-primary"
-                                : "bg-secondary/10 text-secondary"
-                      }
-                    `}
+                                                px-2 py-1 text-xs rounded-full
+                                                ${
+                                                    consultation.type === "chat"
+                                                        ? "bg-info/10 text-info"
+                                                        : consultation.type === "video"
+                                                            ? "bg-primary/10 text-primary"
+                                                            : "bg-secondary/10 text-secondary"
+                                                }
+                                            `}
                                         >
                                             {consultation.type === "chat"
                                                 ? "Chat"
                                                 : consultation.type === "video"
-                                                  ? "Video Call"
-                                                  : "Kunjungan"}
+                                                    ? "Video Call"
+                                                    : "Kunjungan"}
                                         </span>
                                     </div>
                                 </div>
-                                <button className="mt-3 md:mt-0 px-3 py-1 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition duration-300">
+                                <a 
+                                    href={route('farmer.consultations.show', consultation.id)}
+                                    className="mt-3 md:mt-0 px-3 py-1 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition duration-300"
+                                >
                                     Lihat Detail
-                                </button>
+                                </a>
                             </div>
                         ))}
                     </div>
@@ -158,15 +158,15 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                     {consultationTypeOptions.map((option) => (
                         <button
                             key={option.id}
-                            onClick={() => setConsultationType(option.id)}
+                            onClick={() => handleConsultationTypeChange(option.id)}
                             className={`
-                flex flex-col items-center justify-center p-4 rounded-xl transition-all
-                ${
-                    consultationType === option.id
-                        ? "bg-primary text-white shadow-lg"
-                        : "bg-white text-neutral-dark hover:bg-primary-light hover:text-primary shadow-card"
-                }
-              `}
+                                flex flex-col items-center justify-center p-4 rounded-xl transition-all
+                                ${
+                                    consultationType === option.id
+                                        ? "bg-primary text-white shadow-lg"
+                                        : "bg-white text-neutral-dark hover:bg-primary-light hover:text-primary shadow-card"
+                                }
+                            `}
                         >
                             <option.icon
                                 className={`h-8 w-8 mb-2 ${consultationType === option.id ? "text-white" : "text-primary"}`}
@@ -177,7 +177,7 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                 </div>
             </div>
 
-            {/* Search and Filter */}
+            {/* Search */}
             <div className="mb-6">
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-grow relative">
@@ -193,19 +193,6 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                             size={18}
                         />
                     </div>
-                    <select
-                        value={filterSpecialization}
-                        onChange={(e) =>
-                            setFilterSpecialization(e.target.value)
-                        }
-                        className="px-4 py-2 rounded-lg border border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                        {specializations.map((spec) => (
-                            <option key={spec.id} value={spec.id}>
-                                {spec.name}
-                            </option>
-                        ))}
-                    </select>
                 </div>
             </div>
 
@@ -224,10 +211,7 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                             >
                                 <div className="flex items-center p-4">
                                     <img
-                                        src={
-                                            doctor.profile_photo_url ||
-                                            "/storage/images/default-avatar.png"
-                                        }
+                                        src={doctor.profile_photo_url}
                                         alt={doctor.name}
                                         className="h-16 w-16 rounded-full object-cover mr-4"
                                     />
@@ -235,16 +219,14 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                                         <h3 className="font-medium text-neutral-darkest">
                                             {doctor.name}
                                         </h3>
-                                        <p className="text-sm text-primary mb-1">
-                                            {doctor.specialization}
-                                        </p>
                                         <div className="flex items-center text-sm text-neutral">
-                                            <span className="flex items-center mr-3">
+                                            <span className="flex items-center mr-1">
                                                 <Star className="h-4 w-4 text-warning fill-current mr-1" />
                                                 {doctor.rating}
                                             </span>
+                                            <span className="mx-1 text-lg">•</span>
                                             <span>
-                                                {doctor.experience} tahun
+                                                Pengalaman {doctor.experience} tahun
                                             </span>
                                         </div>
                                     </div>
@@ -265,9 +247,11 @@ export default function CallDoctor({ auth, doctors, upcomingConsultations }) {
                                                         minimumFractionDigits: 0,
                                                     },
                                                 ).format(
-                                                    doctor[
-                                                        `${consultationType}_fee`
-                                                    ] || 0,
+                                                    consultationType === "chat" 
+                                                        ? doctor.chat_fee 
+                                                        : consultationType === "video" 
+                                                            ? doctor.video_fee 
+                                                            : doctor.visit_fee || 0,
                                                 )}
                                             </p>
                                         </div>

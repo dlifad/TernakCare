@@ -15,17 +15,95 @@ class ConsultationController extends Controller
     /**
      * Display the list of available doctors for consultation.
      */
-    public function index()
+    public function index(Request $request)
     {
+        // Tangkap parameter tipe konsultasi (default: chat)
+        $consultationType = $request->input('type', 'chat');
+        
+        // Validasi tipe konsultasi
+        if (!in_array($consultationType, ['chat', 'video', 'visit'])) {
+            $consultationType = 'chat';
+        }
+        
+        // Ambil dokter yang aktif berdasarkan tipe konsultasi yang dipilih
         $doctors = Doctor::whereHas('user', function ($query) {
-            $query->where('status', 'active');
-        })->with('user')
-            ->get();
+            $query->where('is_active', true);
+            // Hapus kondisi status karena tidak terlihat di gambar database
+            // $query->where('status', 'active');
+        })
+        ->where(function($query) use ($consultationType) {
+            // Sesuaikan dengan nama kolom yang terlihat di database
+            if ($consultationType === 'chat') {
+                $query->where('chat_service_active', true);
+                // Gunakan is_available_online jika untuk chat
+                $query->where('is_available_online', true);
+            } elseif ($consultationType === 'video') {
+                $query->where('video_call_service_active', true);
+                // Gunakan is_available_online jika untuk video call
+                $query->where('is_available_online', true);
+            } elseif ($consultationType === 'visit') {
+                $query->where('home_visit_service_active', true);
+                // Untuk kunjungan, cek apakah ada jam kerja yang tersedia
+                $query->where('is_available_online', true);
+            }
+        })
+        ->with(['user' => function($query) {
+            $query->select('id', 'name', 'email');
+        }])
+        ->get()
+        ->map(function($doctor) {
+            // Format data untuk frontend sesuai dengan kolom di database
+            return [
+                'id' => $doctor->id,
+                'name' => $doctor->user->name,
+                'profile_photo_url' => $doctor->user->profile_photo ? 
+                    asset('storage/' . $doctor->user->profile_photo) : 
+                    asset('storage/images/default-avatar.png'),
+                'experience' => $doctor->years_experience,
+                'rating' => 5.0, // Nilai default karena tidak ada di tabel
+                'chat_fee' => $doctor->chat_service_fee ?? 0,
+                'video_fee' => $doctor->video_call_service_fee ?? 0,
+                'visit_fee' => $doctor->home_visit_service_fee ?? 0,
+            ];
+        });
+
+        // Ambil konsultasi yang akan datang untuk ditampilkan
+        $upcomingConsultations = Consultation::where('farmer_id', Auth::user()->farmer->id)
+            ->whereIn('status', ['approved', 'active'])
+            ->where(function($query) {
+                $query->whereNull('schedule')
+                      ->orWhere('schedule', '>=', now());
+            })
+            ->with(['doctor.user' => function($query) {
+                $query->select('id', 'name', 'profile_photo');
+            }])
+            ->select('id', 'doctor_id', 'type', 'status', 'schedule')
+            ->orderBy('schedule')
+            ->take(5)
+            ->get()
+            ->map(function($consultation) {
+                return [
+                    'id' => $consultation->id,
+                    'doctor' => [
+                        'id' => $consultation->doctor->id,
+                        'name' => $consultation->doctor->user->name,
+                        'profile_photo_url' => $consultation->doctor->user->profile_photo ? 
+                            asset('storage/' . $consultation->doctor->user->profile_photo) : 
+                            asset('storage/images/default-avatar.png'),
+                    ],
+                    'type' => $consultation->type,
+                    'status' => $consultation->status,
+                    'scheduled_at' => $consultation->schedule,
+                ];
+            });
 
         return Inertia::render('Farmer/Consultation/Index', [
             'doctors' => $doctors,
+            'upcomingConsultations' => $upcomingConsultations,
+            'consultationType' => $consultationType,
         ]);
     }
+
 
     /**
      * Display the doctor's profile and consultation options.
@@ -80,7 +158,7 @@ class ConsultationController extends Controller
             'status' => 'pending',
             'issue' => $request->issue,
             'animal_type' => $request->animal_type,
-            'preferred_time' => $request->preferred_time,
+            'schedule' => $request->preferred_time, // Changed from preferred_time to schedule
         ]);
 
         return redirect()->route('farmer.consultations.show', $consultation->id)
@@ -107,7 +185,7 @@ class ConsultationController extends Controller
             'status' => 'pending',
             'issue' => $request->issue,
             'animal_type' => $request->animal_type,
-            'preferred_time' => $request->preferred_date,
+            'schedule' => $request->preferred_date, // Changed from preferred_time to schedule
             'location' => $request->address,
             'additional_info' => $request->additional_info,
         ]);

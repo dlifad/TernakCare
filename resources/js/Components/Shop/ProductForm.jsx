@@ -1,24 +1,25 @@
+import { Inertia } from '@inertiajs/inertia';
 import React, { useState, useEffect } from "react";
+import { useForm } from "@inertiajs/react";
 import Button from "@/Components/Common/Button";
 import InputError from "@/Components/Common/InputError";
 
-const ProductForm = ({ product, onSubmit, onCancel }) => {
-    const [formData, setFormData] = useState({
-        name: "",
-        description: "",
-        price: "",
-        stock: "",
-        category: "",
+const ProductForm = ({ product, onCancel, categories }) => {
+    const [imagePreview, setImagePreview] = useState(null);
+
+    // Initialize form with Inertia
+    const { data, setData, post, put, processing, errors, reset } = useForm({
+        name: product?.name || "",
+        description: product?.description || "",
+        price: product?.price ? String(product?.price) : "",
+        stock: product?.stock ? String(product?.stock) : "",
+        category: product?.category || "",
         image: null,
     });
 
-    const [errors, setErrors] = useState({});
-    const [imagePreview, setImagePreview] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
     useEffect(() => {
         if (product) {
-            setFormData({
+            setData({
                 name: product.name || "",
                 description: product.description || "",
                 price: product.price ? String(product.price) : "",
@@ -28,130 +29,91 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
             });
 
             if (product.image) {
-                setImagePreview(product.image);
+                // Assume this is a URL to the image
+                setImagePreview(`/storage/${product.image}`);
             }
         }
     }, [product]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value,
+        setData({
+            ...data,
+            [name]: value
         });
-
-        // Clear error for this field
-        if (errors[name]) {
-            setErrors({
-                ...errors,
-                [name]: "",
-            });
-        }
     };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setFormData({
-                ...formData,
-                image: file,
+            setData({
+                ...data,
+                image: file
             });
-
-            // Show image preview
+            
             const reader = new FileReader();
-            reader.onload = (e) => {
-                setImagePreview(e.target.result);
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
             };
             reader.readAsDataURL(file);
-
-            // Clear error for image
-            if (errors.image) {
-                setErrors({
-                    ...errors,
-                    image: "",
-                });
-            }
         }
     };
 
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!formData.name.trim()) {
-            newErrors.name = "Nama produk wajib diisi";
-        }
-
-        if (!formData.description.trim()) {
-            newErrors.description = "Deskripsi produk wajib diisi";
-        }
-
-        if (!formData.price) {
-            newErrors.price = "Harga wajib diisi";
-        } else if (
-            isNaN(Number(formData.price)) ||
-            Number(formData.price) <= 0
-        ) {
-            newErrors.price = "Harga harus berupa angka positif";
-        }
-
-        if (!formData.stock) {
-            newErrors.stock = "Stok wajib diisi";
-        } else if (
-            isNaN(Number(formData.stock)) ||
-            Number(formData.stock) < 0
-        ) {
-            newErrors.stock = "Stok harus berupa angka non-negatif";
-        }
-
-        if (!formData.category) {
-            newErrors.category = "Kategori wajib dipilih";
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
-            return;
+        const formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("description", data.description);
+        formData.append("price", data.price);
+        formData.append("stock", data.stock);
+        formData.append("category", data.category);
+
+        // Hanya kirim image jika ada file baru
+        if (data.image instanceof File) {
+            formData.append("image", data.image);
         }
 
-        setIsSubmitting(true);
-
-        try {
-            // Convert price and stock to numbers
-            const submissionData = {
-                ...formData,
-                price: Number(formData.price),
-                stock: Number(formData.stock),
-            };
-
-            // In a real app, you would handle file upload here
-            // For now, we'll just pass the image preview as the image
-            if (imagePreview && !formData.image) {
-                submissionData.image = imagePreview;
-            }
-
-            await onSubmit(submissionData);
-        } catch (error) {
-            console.error("Error submitting form:", error);
-        } finally {
-            setIsSubmitting(false);
+        if (product) {
+            // PUT dengan FormData manual
+            Inertia.post(
+                route("shop.manage-products.update", product.id),
+                formData,
+                {
+                    method: "post", // tetap method POST
+                    headers: {
+                        "X-HTTP-Method-Override": "PUT", // Laravel akan membaca sebagai PUT
+                    },
+                    onSuccess: () => {
+                        reset();
+                        if (onCancel) onCancel();
+                    },
+                }
+            );
+        } else {
+            post(route("shop.manage-products.store"), {
+                data: formData,
+                forceFormData: true, // gunakan ini jika pakai inertia@1.0+
+                onSuccess: () => {
+                    reset();
+                    if (onCancel) onCancel();
+                },
+            });
         }
     };
 
+
     const removeImage = () => {
-        setFormData({
-            ...formData,
-            image: null,
-        });
+        setData(prev => ({ ...prev, image: null, remove_image: true }));
         setImagePreview(null);
     };
 
     return (
-        <form onSubmit={handleSubmit} className="m-10">
+        <form
+            onSubmit={handleSubmit}
+            className="m-10"
+            encType="multipart/form-data"
+        >
             {/* Product Image */}
             <div className="mb-6">
                 <label className="block text-sm font-medium text-neutral-dark mb-2">
@@ -196,7 +158,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                                     <span>Ganti foto</span>
                                     <input
                                         id="file-upload"
-                                        name="file-upload"
+                                        name="image"
                                         type="file"
                                         className="sr-only"
                                         onChange={handleImageChange}
@@ -229,7 +191,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                                     <span>Upload foto</span>
                                     <input
                                         id="file-upload"
-                                        name="file-upload"
+                                        name="image"
                                         type="file"
                                         className="sr-only"
                                         onChange={handleImageChange}
@@ -264,7 +226,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                     type="text"
                     id="name"
                     name="name"
-                    value={formData.name}
+                    value={data.name}
                     onChange={handleChange}
                     className="mt-1 block w-full rounded-md border-neutral-light shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
                     placeholder="Masukkan nama produk"
@@ -286,7 +248,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                     id="description"
                     name="description"
                     rows={3}
-                    value={formData.description}
+                    value={data.description}
                     onChange={handleChange}
                     className="mt-1 block w-full rounded-md border-neutral-light shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
                     placeholder="Masukkan deskripsi produk"
@@ -309,7 +271,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                         type="text"
                         id="price"
                         name="price"
-                        value={formData.price}
+                        value={data.price}
                         onChange={handleChange}
                         className="mt-1 block w-full rounded-md border-neutral-light shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
                         placeholder="0"
@@ -330,7 +292,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                         type="text"
                         id="stock"
                         name="stock"
-                        value={formData.stock}
+                        value={data.stock}
                         onChange={handleChange}
                         className="mt-1 block w-full rounded-md border-neutral-light shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
                         placeholder="0"
@@ -352,14 +314,14 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                 <select
                     id="category"
                     name="category"
-                    value={formData.category}
+                    value={data.category}
                     onChange={handleChange}
                     className="mt-1 block w-full rounded-md border-neutral-light shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
                 >
                     <option value="">Pilih kategori</option>
-                    <option value="pakan">Pakan Ternak</option>
-                    <option value="obat">Obat & Vitamin</option>
-                    <option value="peralatan">Peralatan</option>
+                    <option value="Pakan Ternak">Pakan Ternak</option>
+                    <option value="Obat & Vitamin">Obat & Vitamin</option>
+                    <option value="Peralatan">Peralatan</option>
                 </select>
                 {errors.category && (
                     <InputError message={errors.category} className="mt-1" />
@@ -370,19 +332,21 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-lighter">
                 <Button
                     type="button"
+                    variant="outline"
                     onClick={onCancel}
                     className="bg-white border border-neutral-light text-neutral-dark hover:bg-neutral-lightest"
-                    disabled={isSubmitting}
+                    disabled={processing}
                 >
                     Batal
                 </Button>
 
                 <Button
+                    variant="primary"
                     type="submit"
                     className="bg-primary text-white hover:bg-primary-dark"
-                    disabled={isSubmitting}
+                    disabled={processing}
                 >
-                    {isSubmitting ? (
+                    {processing ? (
                         <>
                             <svg
                                 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

@@ -12,43 +12,38 @@ class Product extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $fillable = [
         'shop_id',
-        'name',
+        'name', 
         'description',
         'price',
         'stock',
         'image',
         'category',
         'is_active',
-        'featured',
+        'featured'
     ];
 
     /**
      * The attributes that should be cast.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $casts = [
         'price' => 'decimal:2',
         'is_active' => 'boolean',
+        'featured' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
-     * Get the shop that owns the product
+     * Get the shop that owns the product.
      */
     public function shop()
     {
         return $this->belongsTo(Shop::class);
-    }
-
-    /**
-     * Get product transaction items
-     */
-    public function transactionItems()
-    {
-        return $this->hasMany(TransactionItem::class);
     }
 }

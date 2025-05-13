@@ -49,7 +49,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
             </div>
 
             {/* Notifications */}
-            <div className="my-8">
+            {/* <div className="my-8">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="font-heading text-xl font-semibold text-neutral-darkest">
                         Notifikasi Terbaru
@@ -96,7 +96,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Services Section */}
             <div className="my-8">
@@ -230,7 +230,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                             Butuh Bantuan?
                         </h2>
                         <p className="text-neutral-dark">
-                            Tim kami siap membantu Anda 24/7
+                            Kami siap membantu Anda 24/7
                         </p>
                     </div>
                     <div className="flex gap-3">
@@ -240,12 +240,14 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                         >
                             Panduan Penggunaan
                         </Link>
-                        <Link
-                            href="#"
-                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition duration-300"
+                        <a
+                        href="https://wa.me/62851"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition duration-300"
                         >
-                            Hubungi Kami
-                        </Link>
+                        Hubungi Kami
+                        </a>
                     </div>
                 </div>
             </div>

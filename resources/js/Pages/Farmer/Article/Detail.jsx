@@ -28,7 +28,7 @@ const ArticleDetail = ({ auth, article }) => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6">
                     <a
-                        href="/artikel"
+                        href="/farmer/artikel"
                         className="inline-flex items-center text-primary hover:text-primary-dark mb-6"
                     >
                         <svg

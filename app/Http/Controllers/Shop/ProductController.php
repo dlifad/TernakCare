@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Intervention\Image\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -29,16 +31,26 @@ class ProductController extends Controller
             $query->where('category', $request->category);
         }
 
+        // Filter berdasarkan status aktif
+        if ($request->filled('is_active')) {
+            if ($request->is_active !== 'all') {
+                $query->where('is_active', 
+                    $request->is_active === 'active' || $request->is_active === 'true' ? 1 : 0
+                );
+            }
+        }
+
+
         $query->orderBy(
             $request->input('sort_field', 'created_at'),
             $request->input('sort_direction', 'desc')
         );
 
-        $products = $query->paginate(12)->withQueryString();
+        $products = $query->paginate(9)->withQueryString();
 
         return Inertia::render('Shop/ManageProduct/Index', [
             'products' => $products,
-            'filters' => $request->only(['search', 'category', 'sort_field', 'sort_direction']),
+            'filters' => $request->only(['search', 'category', 'is_active', 'sort_field', 'sort_direction']),
             'categories' => $this->getProductCategories()
         ]);
     }
@@ -52,28 +64,56 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'category' => 'required|string|max:100',
-            'image' => 'required|image|max:2048',
-            'status' => 'required|in:available,out_of_stock',
-            'weight' => 'nullable|numeric|min:0',
-            'dimensions' => 'nullable|string|max:100',
+            'category' => 'required|string|in:Pakan Ternak,Obat & Vitamin,Peralatan',
+            'image' => 'nullable|image|max:5120', // 5MB max
         ]);
 
-        $imagePath = $request->file('image')->store('product-images', 'public');
+        // Set default values
+        $validated['shop_id'] = auth()->user()->shop->id;
+        $validated['is_active'] = $request->stock > 0 ? true : false;
+        $validated['featured'] = false;
 
-        Product::create(array_merge($request->only([
-            'name', 'description', 'price', 'stock', 'category', 'status', 'weight', 'dimensions'
-        ]), [
-            'shop_id' => Auth::user()->shop->id,
-            'image' => $imagePath
-        ]));
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $path = $this->storeImage($request->file('image'));
+            $validated['image'] = $path;
+        } else if ($request->has('image') && is_string($request->image) && Str::startsWith($request->image, 'data:image')) {
+            // Handle base64 encoded image from the frontend
+            $path = $this->storeBase64Image($request->image);
+            $validated['image'] = $path;
+        }
 
-        return redirect()->route('shop.manage-products.index')->with('message', 'Produk berhasil ditambahkan.');
+        $product = Product::create($validated);
+
+        return redirect()->route('shop.manage-products.index')
+            ->with('success', 'Produk berhasil disimpan.');
+    }
+
+
+    private function storeImage($image)
+    {
+        return $image->store('product-images', 'public');
+    }
+
+    // Add method if not exists
+    private function storeBase64Image($base64Image)
+    {
+        // Extract the base64 content
+        $image_parts = explode(";base64,", $base64Image);
+        $image_type_aux = explode("image/", $image_parts[0]);
+        $image_type = $image_type_aux[1];
+        $image_base64 = base64_decode($image_parts[1]);
+        $filename = 'product-images/' . uniqid() . '.' . $image_type;
+
+        // Store the image
+        Storage::disk('public')->put($filename, $image_base64);
+
+        return $filename;
     }
 
     public function edit(Product $product)
@@ -90,30 +130,44 @@ class ProductController extends Controller
     {
         $this->authorizeProduct($product);
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'category' => 'required|string|max:100',
-            'image' => 'nullable|image|max:2048',
-            'status' => 'required|in:available,out_of_stock',
-            'weight' => 'nullable|numeric|min:0',
-            'dimensions' => 'nullable|string|max:100',
+            'category' => 'required|string|in:Pakan Ternak,Obat & Vitamin,Peralatan',
+            'image' => 'nullable|image|max:5120', // Ubah max size sama dengan store
+            'is_active' => 'nullable|boolean',
         ]);
 
+        // Handle image update
         if ($request->hasFile('image')) {
+            // Delete old image
             if ($product->image && Storage::disk('public')->exists($product->image)) {
                 Storage::disk('public')->delete($product->image);
             }
-            $product->image = $request->file('image')->store('product-images', 'public');
+            $validated['image'] = $request->file('image')->store('product-images', 'public');
+        } else if ($request->has('image') && is_string($request->image) && Str::startsWith($request->image, 'data:image')) {
+            // Handle base64 image
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $validated['image'] = $this->storeBase64Image($request->image);
         }
 
-        $product->update($request->only([
-            'name', 'description', 'price', 'stock', 'category', 'status', 'weight', 'dimensions'
+        // Remove image key if no new image
+        if (!isset($validated['image'])) {
+            unset($validated['image']);
+        }
+
+        // Update product
+        $product->update(array_merge($validated, [
+            'is_active' => $request->has('is_active') ? $request->is_active : ($request->stock > 0 ? 1 : 0),
         ]));
 
-        return redirect()->route('shop.manage-products.index')->with('message', 'Produk berhasil diperbarui.');
+        return redirect()
+            ->route('shop.manage-products.index')
+            ->with('success', 'Produk berhasil diperbarui.');
     }
 
     public function destroy(Product $product)
@@ -139,22 +193,29 @@ class ProductController extends Controller
 
         $product->update([
             'stock' => $request->stock,
-            'status' => $request->stock > 0 ? 'available' : 'out_of_stock',
+            'is_active' => $request->stock > 0 ? 1 : 0,
         ]);
 
         return back()->with('message', 'Stok produk berhasil diperbarui.');
     }
 
+    public function toggleActive(Request $request, Product $product)
+    {
+        $this->authorizeProduct($product);
+
+        $product->update([
+            'is_active' => !$product->is_active
+        ]);
+
+        return back()->with('message', $product->is_active ? 'Produk berhasil diaktifkan.' : 'Produk berhasil dinonaktifkan.');
+    }
+
     private function getProductCategories()
     {
         return [
-            'feed' => 'Feed & Nutrition',
-            'medicine' => 'Medicine & Health',
-            'equipment' => 'Equipment & Tools',
-            'accessories' => 'Accessories',
-            'supplements' => 'Supplements',
-            'care' => 'Animal Care Products',
-            'other' => 'Other',
+            'Pakan Ternak' => 'Pakan Ternak',
+            'Obat & Vitamin' => 'Obat & Vitamin',
+            'Peralatan' => 'Peralatan',
         ];
     }
 

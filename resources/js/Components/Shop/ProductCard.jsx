@@ -1,4 +1,6 @@
 import React from "react";
+import { router } from '@inertiajs/react';
+
 // import { formatCurrency } from '@/utils';
 
 const ProductCard = ({ product, onEdit, onDelete, onToggleStatus }) => {
@@ -10,7 +12,7 @@ const ProductCard = ({ product, onEdit, onDelete, onToggleStatus }) => {
         stock,
         image,
         category,
-        status,
+        is_active,
         created_at,
     } = product;
 
@@ -27,14 +29,38 @@ const ProductCard = ({ product, onEdit, onDelete, onToggleStatus }) => {
     // Determine badge color based on category
     const getCategoryBadgeColor = (category) => {
         switch (category) {
-            case "pakan":
+            case "Pakan Ternak":
                 return "bg-green-100 text-green-800";
-            case "obat":
+            case "Obat & Vitamin":
                 return "bg-blue-100 text-blue-800";
+            case "Peralatan":
+                return "bg-yellow-100 text-yellow-800";
             default:
                 return "bg-gray-100 text-gray-800";
         }
     };
+    
+    // Fixed helper function to format image URL properly
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        
+        // Check if the path is already a full URL
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            return imagePath;
+        }
+        
+        // From the folder structure screenshot, it appears images are directly in /img/product-images/
+        // Let's simplify the path handling logic
+        
+        // If it includes the full path with product-images already
+        if (imagePath.includes('product-images/')) {
+            return `/storage/${imagePath}`;
+        }
+        
+        // For simple filenames, use the correct directory
+        return `/storage/img/product-images/${imagePath}`;
+    };
+
 
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden border border-neutral-lighter">
@@ -42,9 +68,28 @@ const ProductCard = ({ product, onEdit, onDelete, onToggleStatus }) => {
             <div className="h-48 bg-neutral-lightest flex items-center justify-center">
                 {image ? (
                     <img
-                        src={image}
+                        src={getImageUrl(image)}
                         alt={name}
                         className="h-full w-full object-cover"
+                        onError={(e) => {
+                            e.target.onerror = null; // Prevent infinite loop
+                            
+                            // Simplify the fallback logic
+                            // Try alternative paths if the original fails
+                            const currentSrc = e.target.src;
+                            
+                            if (currentSrc.includes('/storage/img/product-images/')) {
+                                // Try without the /img/ subdirectory
+                                e.target.src = currentSrc.replace('/storage/img/product-images/', '/storage/product-images/');
+                            } else if (currentSrc.includes('/storage/product-images/')) {
+                                // If that fails, try with just the filename in root /storage/
+                                const filename = currentSrc.split('/').pop();
+                                e.target.src = `/storage/${filename}`;
+                            } else {
+                                // Default fallback
+                                e.target.src = "/storage/img/placeholder-product.png";
+                            }
+                        }}
                     />
                 ) : (
                     <div className="text-neutral flex flex-col items-center justify-center">
@@ -74,20 +119,16 @@ const ProductCard = ({ product, onEdit, onDelete, onToggleStatus }) => {
                         {name}
                     </h3>
                     <span
-                        className={`px-2 py-1 text-xs font-medium rounded ${status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                        className={`px-2 py-1 text-xs font-medium rounded ${is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
                     >
-                        {status === "active" ? "Aktif" : "Nonaktif"}
+                        {is_active ? "Aktif" : "Nonaktif"}
                     </span>
                 </div>
 
                 <span
                     className={`inline-block mt-2 px-2 py-1 text-xs font-medium rounded ${getCategoryBadgeColor(category)}`}
                 >
-                    {category === "pakan"
-                        ? "Pakan Ternak"
-                        : category === "obat"
-                          ? "Obat & Vitamin"
-                          : category}
+                    {category}
                 </span>
 
                 <p className="mt-2 text-sm text-neutral-dark line-clamp-2">
@@ -121,12 +162,12 @@ const ProductCard = ({ product, onEdit, onDelete, onToggleStatus }) => {
                 <button
                     onClick={onToggleStatus}
                     className={`px-3 py-1 rounded text-sm font-medium ${
-                        status === "active"
+                        is_active
                             ? "bg-red-50 text-red-700 hover:bg-red-100"
                             : "bg-green-50 text-green-700 hover:bg-green-100"
                     }`}
                 >
-                    {status === "active" ? "Nonaktifkan" : "Aktifkan"}
+                    {is_active ? "Nonaktifkan" : "Aktifkan"}
                 </button>
 
                 <div className="flex space-x-2">

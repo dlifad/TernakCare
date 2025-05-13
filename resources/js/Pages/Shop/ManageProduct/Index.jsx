@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Head } from "@inertiajs/react";
+import { useState } from "react";
+import { Head, usePage } from "@inertiajs/react";
 import ShopLayout from "@/Layouts/ShopLayout";
 import Card from "@/Components/Shop/Card";
 import Button from "@/Components/Common/Button";
@@ -7,81 +7,18 @@ import Modal from "@/Components/Common/Modal";
 import ProductForm from "@/Components/Shop/ProductForm";
 import ProductCard from "@/Components/Shop/ProductCard";
 import Alert from "@/Components/Common/Alert";
+import { router } from "@inertiajs/react";
 
-const ManageProducts = ({ auth }) => {
-    const [products, setProducts] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+const ManageProducts = ({ auth, products, filters, categories }) => {
+    const { flash = {} } = usePage().props;
     const [showModal, setShowModal] = useState(false);
     const [currentProduct, setCurrentProduct] = useState(null);
-    const [alert, setAlert] = useState({ show: false, type: "", message: "" });
-    const [filter, setFilter] = useState("all");
-
-    useEffect(() => {
-        // Fetch products in a real application
-        fetchProducts();
-    }, []);
-
-    const fetchProducts = async () => {
-        setIsLoading(true);
-        try {
-            // Mock data - in a real app, this would be fetched from an API
-            setTimeout(() => {
-                setProducts([
-                    {
-                        id: 1,
-                        name: "Pakan Ternak Premium",
-                        description:
-                            "Pakan ternak berkualitas tinggi untuk pertumbuhan optimal",
-                        price: 150000,
-                        stock: 45,
-                        image: null,
-                        category: "pakan",
-                        status: "active",
-                        created_at: "2025-04-15T10:30:00",
-                    },
-                    {
-                        id: 2,
-                        name: "Vitamin Ternak",
-                        description:
-                            "Suplemen vitamin untuk menjaga kesehatan ternak",
-                        price: 175000,
-                        stock: 30,
-                        image: null,
-                        category: "obat",
-                        status: "active",
-                        created_at: "2025-04-18T14:15:00",
-                    },
-                    {
-                        id: 3,
-                        name: "Obat Cacing Ternak",
-                        description: "Obat anti parasit untuk ternak",
-                        price: 95000,
-                        stock: 22,
-                        image: null,
-                        category: "obat",
-                        status: "active",
-                        created_at: "2025-04-22T09:45:00",
-                    },
-                    {
-                        id: 4,
-                        name: "Pakan Organik",
-                        description: "Pakan organik alami tanpa bahan kimia",
-                        price: 300000,
-                        stock: 15,
-                        image: null,
-                        category: "pakan",
-                        status: "inactive",
-                        created_at: "2025-04-25T16:20:00",
-                    },
-                ]);
-                setIsLoading(false);
-            }, 500);
-        } catch (error) {
-            console.error("Error fetching products:", error);
-            setIsLoading(false);
-            showAlert("error", "Gagal memuat produk");
-        }
-    };
+    const [alert, setAlert] = useState({ 
+        show: flash.message ? true : false, 
+        type: flash.message ? "success" : "", 
+        message: flash.message || "" 
+    });
+    const [filter, setFilter] = useState(filters?.is_active ?? "all");
 
     const handleAddProduct = () => {
         setCurrentProduct(null);
@@ -95,69 +32,56 @@ const ManageProducts = ({ auth }) => {
 
     const handleDeleteProduct = async (productId) => {
         if (window.confirm("Apakah Anda yakin ingin menghapus produk ini?")) {
-            try {
-                // In a real app, this would call an API
-                setProducts(
-                    products.filter((product) => product.id !== productId),
-                );
-                showAlert("success", "Produk berhasil dihapus");
-            } catch (error) {
-                console.error("Error deleting product:", error);
-                showAlert("error", "Gagal menghapus produk");
-            }
+            router.delete(route('shop.manage-products.destroy', productId), {
+                onSuccess: () => {
+                    showAlert("success", "Produk berhasil dihapus");
+                },
+                onError: () => {
+                    showAlert("error", "Gagal menghapus produk");
+                }
+            });
         }
     };
 
-    const handleToggleStatus = async (product) => {
-        try {
-            // In a real app, this would call an API
-            const updatedProducts = products.map((p) => {
-                if (p.id === product.id) {
-                    return {
-                        ...p,
-                        status: p.status === "active" ? "inactive" : "active",
-                    };
-                }
-                return p;
-            });
-            setProducts(updatedProducts);
-            showAlert(
-                "success",
-                `Produk berhasil ${product.status === "active" ? "dinonaktifkan" : "diaktifkan"}`,
-            );
-        } catch (error) {
-            console.error("Error updating product status:", error);
-            showAlert("error", "Gagal mengubah status produk");
-        }
+    const handleToggleStatus = (product) => {
+        router.post(route('shop.manage-products.toggle-active', product.id), {
+            _method: 'put'  // Menggunakan _method untuk mengirim sebagai PUT
+        }, {
+            onSuccess: () => {
+                showAlert("success", `Produk berhasil ${!product.is_active ? "diaktifkan" : "dinonaktifkan"}`);
+            },
+            onError: () => {
+                showAlert("error", "Gagal mengubah status produk");
+            }
+        });
     };
 
     const handleSubmit = async (formData) => {
-        try {
-            if (currentProduct) {
-                // Update existing product
-                const updatedProducts = products.map((p) => {
-                    if (p.id === currentProduct.id) {
-                        return { ...p, ...formData };
-                    }
-                    return p;
-                });
-                setProducts(updatedProducts);
-                showAlert("success", "Produk berhasil diperbarui");
-            } else {
-                // Add new product
-                const newProduct = {
-                    id: Math.max(...products.map((p) => p.id), 0) + 1,
-                    ...formData,
-                    status: "active",
-                    created_at: new Date().toISOString(),
-                };
-                setProducts([newProduct, ...products]);
-                showAlert("success", "Produk berhasil ditambahkan");
-            }
-            setShowModal(false);
-        } catch (error) {
-            console.error("Error saving product:", error);
-            showAlert("error", "Gagal menyimpan produk");
+        if (currentProduct) {
+            // Update existing product
+            router.post(route('shop.manage-products.update', currentProduct.id), {
+                ...formData,
+                _method: 'put'
+            }, {
+                onSuccess: () => {
+                    setShowModal(false);
+                    showAlert("success", "Produk berhasil diperbarui");
+                },
+                onError: () => {
+                    showAlert("error", "Gagal menyimpan produk");
+                }
+            });
+        } else {
+            // Add new product
+            router.post(route('shop.manage-products.store'), formData, {
+                onSuccess: () => {
+                    setShowModal(false);
+                    showAlert("success", "Produk berhasil ditambahkan");
+                },
+                onError: () => {
+                    showAlert("error", "Gagal menyimpan produk");
+                }
+            });
         }
     };
 
@@ -165,14 +89,21 @@ const ManageProducts = ({ auth }) => {
         setAlert({ show: true, type, message });
         setTimeout(
             () => setAlert({ show: false, type: "", message: "" }),
-            3000,
+            3000
         );
     };
 
-    const filteredProducts =
-        filter === "all"
-            ? products
-            : products.filter((product) => product.status === filter);
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        router.get(
+            route('shop.manage-products.index'),
+            { ...filters, is_active: newFilter === "all" ? undefined : newFilter },
+            { preserveState: true }
+        );
+
+    };
+
+    const filteredProducts = products.data || [];
 
     return (
         <ShopLayout user={auth.user}>
@@ -189,7 +120,7 @@ const ManageProducts = ({ auth }) => {
                             <div className="flex rounded-md shadow-sm">
                                 <button
                                     type="button"
-                                    onClick={() => setFilter("all")}
+                                    onClick={() => handleFilterChange("all")}
                                     className={`px-4 py-2 text-sm font-medium rounded-l-md ${
                                         filter === "all"
                                             ? "bg-primary text-white"
@@ -200,9 +131,9 @@ const ManageProducts = ({ auth }) => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setFilter("active")}
+                                    onClick={() => handleFilterChange("true")}
                                     className={`px-4 py-2 text-sm font-medium ${
-                                        filter === "active"
+                                        filter === "true"
                                             ? "bg-primary text-white"
                                             : "bg-white text-neutral-dark hover:bg-neutral-lightest"
                                     } border-t border-b border-neutral-light`}
@@ -211,9 +142,9 @@ const ManageProducts = ({ auth }) => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setFilter("inactive")}
+                                    onClick={() => handleFilterChange("false")}
                                     className={`px-4 py-2 text-sm font-medium rounded-r-md ${
-                                        filter === "inactive"
+                                        filter === "false"
                                             ? "bg-primary text-white"
                                             : "bg-white text-neutral-dark hover:bg-neutral-lightest"
                                     } border border-neutral-light`}
@@ -253,62 +184,120 @@ const ManageProducts = ({ auth }) => {
                         />
                     )}
 
-                    {isLoading ? (
-                        <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                        </div>
+                    {filteredProducts.length === 0 ? (
+                        <Card className="text-center py-12">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-16 w-16 mx-auto text-neutral"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                                />
+                            </svg>
+                            <h3 className="mt-4 text-lg font-medium text-neutral-darkest">
+                                Belum ada produk
+                            </h3>
+                            <p className="mt-1 text-neutral">
+                                Tambahkan produk pertama Anda untuk
+                                mulai berjualan
+                            </p>
+                            <Button
+                                onClick={handleAddProduct}
+                                className="mt-4 bg-primary text-white"
+                            >
+                                Tambah Produk
+                            </Button>
+                        </Card>
                     ) : (
-                        <>
-                            {filteredProducts.length === 0 ? (
-                                <Card className="text-center py-12">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-16 w-16 mx-auto text-neutral"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                                        />
-                                    </svg>
-                                    <h3 className="mt-4 text-lg font-medium text-neutral-darkest">
-                                        Belum ada produk
-                                    </h3>
-                                    <p className="mt-1 text-neutral">
-                                        Tambahkan produk pertama Anda untuk
-                                        mulai berjualan
-                                    </p>
-                                    <Button
-                                        onClick={handleAddProduct}
-                                        className="mt-4 bg-primary text-white"
-                                    >
-                                        Tambah Produk
-                                    </Button>
-                                </Card>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredProducts.map((product) => (
-                                        <ProductCard
-                                            key={product.id}
-                                            product={product}
-                                            onEdit={() =>
-                                                handleEditProduct(product)
-                                            }
-                                            onDelete={() =>
-                                                handleDeleteProduct(product.id)
-                                            }
-                                            onToggleStatus={() =>
-                                                handleToggleStatus(product)
-                                            }
-                                        />
-                                    ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredProducts.map((product) => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    onEdit={() =>
+                                        handleEditProduct(product)
+                                    }
+                                    onDelete={() =>
+                                        handleDeleteProduct(product.id)
+                                    }
+                                    onToggleStatus={() =>
+                                        handleToggleStatus(product)
+                                    }
+                                    isActive={product.is_active}
+                                />
+                            ))}
+                        </div>
+                    )}
+                    
+                    {products.links && products.links.length > 3 && (
+                        <div className="mt-6 flex justify-center">
+                            <nav className="flex items-center justify-between">
+                                <div className="flex-1 flex justify-between sm:hidden">
+                                    {products.links[0].url && (
+                                        <a
+                                            href={products.links[0].url}
+                                            className="relative inline-flex items-center px-4 py-2 border border-neutral-light text-sm font-medium rounded-md text-neutral-dark bg-white hover:bg-neutral-lightest"
+                                        >
+                                            Sebelumnya
+                                        </a>
+                                    )}
+                                    {products.links[products.links.length - 1].url && (
+                                        <a
+                                            href={products.links[products.links.length - 1].url}
+                                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-neutral-light text-sm font-medium rounded-md text-neutral-dark bg-white hover:bg-neutral-lightest"
+                                        >
+                                            Selanjutnya
+                                        </a>
+                                    )}
                                 </div>
-                            )}
-                        </>
+                                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm text-neutral-dark">
+                                            Menampilkan{" "}
+                                            <span className="font-medium">{products.from}</span> -{" "}
+                                            <span className="font-medium">{products.to}</span> dari{" "}
+                                            <span className="font-medium">{products.total}</span> produk
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                            {products.links.map((link, i) => {
+                                                // Skip "prev" and "next" for desktop view
+                                                if (i === 0 || i === products.links.length - 1) return null;
+                                                
+                                                return link.url ? (
+                                                    <a
+                                                        key={i}
+                                                        href={link.url}
+                                                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium
+                                                            ${link.active
+                                                                ? "z-10 bg-primary border-primary text-white"
+                                                                : "bg-white border-neutral-light text-neutral-dark hover:bg-neutral-lightest"
+                                                            }
+                                                            ${i === 1 ? "rounded-l-md" : ""}
+                                                            ${i === products.links.length - 2 ? "rounded-r-md" : ""}
+                                                        `}
+                                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        key={i}
+                                                        className="relative inline-flex items-center px-4 py-2 border border-neutral-light bg-white text-sm font-medium text-neutral-light"
+                                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                                    />
+                                                );
+                                            })}
+                                        </nav>
+                                    </div>
+                                </div>
+                            </nav>
+                        </div>
                     )}
                 </div>
             </div>
@@ -322,6 +311,7 @@ const ManageProducts = ({ auth }) => {
                     product={currentProduct}
                     onSubmit={handleSubmit}
                     onCancel={() => setShowModal(false)}
+                    categories={categories}
                 />
             </Modal>
         </ShopLayout>

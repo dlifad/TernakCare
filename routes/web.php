@@ -176,15 +176,15 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
     Route::get('/dashboard', [ShopDashboardController::class, 'index'])->name('dashboard');
 
     // Manajemen Produk
-    Route::prefix('manageproduct')->name('products.')->group(function () {
-        Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::get('/create', [ProductController::class, 'create'])->name('create');
-        Route::post('/', [ProductController::class, 'store'])->name('store');
-        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
-        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
-        Route::put('/{product}', [ProductController::class, 'update'])->name('update');
-        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
-    });
+    Route::get('/manageproduct', [ProductController::class, 'index'])->name('manage-products.index');
+    Route::post('/products', [ProductController::class, 'store'])->name('manage-products.store');
+    Route::get('/products/create', [ProductController::class, 'create'])->name('manage-products.create');
+    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('manage-products.edit');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->name('manage-products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('manage-products.destroy');
+    Route::put('/products/{product}/stock', [ProductController::class, 'updateStock'])->name('manage-products.update-stock');
+    Route::put('/products/{product}/toggle-active', [ProductController::class, 'toggleActive'])->name('manage-products.toggle-active');
+
 
     // Transaksi
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
@@ -202,15 +202,18 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
 
 });
 
-// Rute peternak
 Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('farmer.')->group(function () {
-    // Route::get('/dashboard', [DashboardController::class, 'farmerDashboard'])->name('dashboard');
+    // Dashboard dan Home
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     // Konsultasi
-    Route::resource('consultations', ConsultationController::class);
+    Route::resource('consultations', ConsultationController::class)->except(['create', 'edit']);
     Route::get('/consultations/{consultation}/chat', [ConsultationController::class, 'chat'])->name('consultations.chat');
     Route::post('/consultations/{consultation}/chat', [ConsultationController::class, 'sendMessage'])->name('consultations.chat.send');
+    // Tambahkan rute untuk filter konsultasi berdasarkan tipe
+    Route::get('/doctors/{consultationType?}', [ConsultationController::class, 'index'])
+        ->name('consultations.index')
+        ->where('consultationType', 'chat|video|visit');
 
     // Marketplace
     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
@@ -223,16 +226,11 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
 
     // Artikel dan Aktivitas
     Route::get('/artikel', [App\Http\Controllers\Farmer\ArticleController::class, 'index'])
-        ->name('articles')
-        ->middleware(['auth']);
-
+        ->name('articles');
 
     // Rute untuk halaman detail artikel
     Route::get('/artikel/{slug}', [App\Http\Controllers\Farmer\ArticleController::class, 'show'])
-        ->name('articles.show')
-        ->middleware(['auth']);
-
-
+        ->name('articles.show');
 
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity');
 

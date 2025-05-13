@@ -45,11 +45,8 @@ export default function Welcome({ auth }) {
                                     </Link>
                                 ) : (
                                     <>
-                                        <Link
-                                            href={route("login")}
-                                            className="text-primary hover:text-primary-dark px-3 py-2 rounded-md text-sm font-medium"
-                                        >
-                                            Login
+                                        <Link href={route("login")}>
+                                            <Button variant="outline">Login</Button>
                                         </Link>
                                         <Link href={route("register")}>
                                             <Button>Register</Button>
@@ -357,7 +354,7 @@ export default function Welcome({ auth }) {
                                 </Link>
                                 <Link href={route("login")}>
                                     <Button
-                                        variant="primary"
+                                        variant="white"
                                         className="px-8 py-3 text-base bg-primary-dark"
                                     >
                                         Login
