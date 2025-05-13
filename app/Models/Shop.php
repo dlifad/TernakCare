@@ -9,63 +9,37 @@ class Shop extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'user_id',
         'shop_name',
         'shop_phone',
         'shop_address',
         'shop_description',
         'owner_id_number',
         'status',
+        'rejection_reason',
         'shop_logo',
         'shop_banner',
         'delivery_options',
         'payment_methods',
-        'operating_hours',
+        'operating_hours'
     ];
 
-    /**
-     * Get the user that owns the shop.
-     */
+    // Jika delivery_options, payment_methods, dan operating_hours disimpan sebagai JSON
+    protected $casts = [
+        'delivery_options' => 'array',
+        'payment_methods' => 'array',
+        'operating_hours' => 'array'
+    ];
+
+    // Relasi ke User
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Get products associated with this shop.
-     */
-    public function products()
+    // Relasi ke BankAccount
+    public function bankAccount()
     {
-        return $this->hasMany(Product::class);
-    }
-
-    /**
-     * Check if shop is verified.
-     */
-    public function isVerified()
-    {
-        return $this->status === 'verified';
-    }
-
-    /**
-     * Check if shop is pending verification.
-     */
-    public function isPending()
-    {
-        return $this->status === 'pending';
-    }
-
-    /**
-     * Check if shop is rejected.
-     */
-    public function isRejected()
-    {
-        return $this->status === 'rejected';
+        return $this->hasOne(BankAccount::class);
     }
 }

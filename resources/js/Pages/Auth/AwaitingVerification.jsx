@@ -2,10 +2,10 @@
 // atau resources/js/Pages/Auth/AwaitingVerification.vue jika menggunakan Vue
 
 // Versi React (JSX)
-import React from 'react';
+import React from "react";
 import { Head, Link } from "@inertiajs/react";
-import AuthLayout from '@/Layouts/AuthLayout';
-import Button from '@/Components/Common/Button';
+import AuthLayout from "@/Layouts/AuthLayout";
+import Button from "@/Components/Common/Button";
 
 export default function AwaitingVerification({ userType }) {
     return (
@@ -32,23 +32,24 @@ export default function AwaitingVerification({ userType }) {
                     <path d="M12 12l-8 -4.5" />
                 </svg> */}
 
-                <h2 className="text-2xl font-semibold mb-2">Pendaftaran {userType === 'doctor' ? 'Dokter' : 'Toko'} Berhasil</h2>
-                
+                <h2 className="text-2xl font-semibold mb-2">
+                    Pendaftaran {userType === "doctor" ? "Dokter" : "Toko"}{" "}
+                    Berhasil
+                </h2>
+
                 <p className="text-gray-600 mb-6">
-                    Terima kasih atas pendaftaran Anda. Akun {userType === 'doctor' ? 'Dokter' : 'Toko'} Anda sedang
+                    Terima kasih atas pendaftaran Anda. Akun{" "}
+                    {userType === "doctor" ? "Dokter" : "Toko"} Anda sedang
                     menunggu verifikasi oleh admin.
                 </p>
-                
+
                 <p className="text-gray-600 mb-6">
-                    Kami akan mengirimkan email notifikasi ke alamat email terdaftar ketika akun Anda telah diverifikasi.
+                    Kami akan mengirimkan email notifikasi ke alamat email
+                    terdaftar ketika akun Anda telah diverifikasi.
                 </p>
 
                 <div className="mt-4">
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
-                    >
+                    <Link href={route("logout")} method="post" as="button">
                         <Button variant="primary" type="submit">
                             Kembali
                         </Button>

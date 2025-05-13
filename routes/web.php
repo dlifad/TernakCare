@@ -166,7 +166,9 @@ Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('
     // Riwayat dan Profil
     Route::get('/history', [DoctorHistoryController::class, 'index'])->name('history');
     Route::get('/profile', [DoctorProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [DoctorProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [DoctorProfileController::class, 'update'])->name('profile.update');
+    Route::post('/password/update', [DoctorProfileController::class, 'updatePassword'])->name('password.update');
+    Route::post('/settings/update', [DoctorProfileController::class, 'updateSettings'])->name('settings.update');
 });
 
 // Rute toko
@@ -191,8 +193,13 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
 
     // Riwayat dan Profil
     Route::get('/history', [ShopHistoryController::class, 'index'])->name('history');
-    Route::get('/profile', [ShopProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ShopProfileController::class, 'update'])->name('profile.update');
+    // Route::get('/profile', [ShopProfileController::class, 'edit'])->name('profile.edit');
+    // Route::patch('/profile', [ShopProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/profile', [ShopProfileController::class, 'show'])->name('profile');
+    Route::post('/profile/update', [ShopProfileController::class, 'update'])->name('profile.update');
+    Route::post('/password/update', [ShopProfileController::class, 'updatePassword'])->name('password.update');
+
 });
 
 // Rute peternak

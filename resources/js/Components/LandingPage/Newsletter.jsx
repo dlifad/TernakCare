@@ -1,19 +1,19 @@
 // resources/js/Components/Newsletter.jsx
-import React, { useState } from 'react';
-import Button from '@/Components/Common/Button';
+import React, { useState } from "react";
+import Button from "@/Components/Common/Button";
 
-export default function Newsletter({ className = '' }) {
-    const [email, setEmail] = useState('');
+export default function Newsletter({ className = "" }) {
+    const [email, setEmail] = useState("");
     const [status, setStatus] = useState(null);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         // Simulate API call
         if (email) {
             // Here you would normally send the email to your backend
-            setStatus('success');
-            setEmail('');
+            setStatus("success");
+            setEmail("");
             setTimeout(() => {
                 setStatus(null);
             }, 3000);
@@ -22,11 +22,14 @@ export default function Newsletter({ className = '' }) {
 
     return (
         <div className={`bg-white rounded-xl shadow-custom p-6 ${className}`}>
-            <h3 className="text-xl font-bold text-text-dark mb-2">Newsletter</h3>
+            <h3 className="text-xl font-bold text-text-dark mb-2">
+                Newsletter
+            </h3>
             <p className="text-gray-600 mb-4">
-                Dapatkan info terbaru dan tips perawatan ternak langsung ke inbox Anda
+                Dapatkan info terbaru dan tips perawatan ternak langsung ke
+                inbox Anda
             </p>
-            
+
             <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                     <input
@@ -38,12 +41,12 @@ export default function Newsletter({ className = '' }) {
                         required
                     />
                 </div>
-                
+
                 <Button type="submit" variant="primary" className="w-full">
                     Berlangganan
                 </Button>
-                
-                {status === 'success' && (
+
+                {status === "success" && (
                     <p className="mt-2 text-sm text-green-600">
                         Terima kasih telah berlangganan!
                     </p>

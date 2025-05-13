@@ -21,11 +21,27 @@ class Doctor extends Model
         'phone_number',
         'years_experience',
         'status',
+        'rejection_reason',
         'profile_photo',
         'about',
         'consultation_fee',
         'is_available_online',
         'working_hours',
+        'chat_service_active',
+        'chat_service_fee',
+        'video_call_service_active',
+        'video_call_service_fee',
+        'home_visit_service_active',
+        'home_visit_service_fee',
+    ];
+
+    protected $casts = [
+        'chat_service_active' => 'boolean',
+        'video_call_service_active' => 'boolean',
+        'home_visit_service_active' => 'boolean',
+        'chat_service_fee' => 'integer',
+        'video_call_service_fee' => 'integer',
+        'home_visit_service_fee' => 'integer',
     ];
 
     /**
@@ -36,27 +52,25 @@ class Doctor extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Check if doctor is verified.
-     */
-    public function isVerified()
+    public function toProfileData()
     {
-        return $this->status === 'verified';
-    }
-
-    /**
-     * Check if doctor is pending verification.
-     */
-    public function isPending()
-    {
-        return $this->status === 'pending';
-    }
-
-    /**
-     * Check if doctor is rejected.
-     */
-    public function isRejected()
-    {
-        return $this->status === 'rejected';
+        return [
+            'id' => $this->id,
+            'name' => $this->user->name,
+            'email' => $this->user->email,
+            'phone' => $this->user->phone,
+            'address' => $this->user->address,
+            'license_number' => $this->license_number,
+            'years_experience' => $this->years_experience,
+            'working_hours' => $this->working_hours,
+            'practice_address' => $this->practice_address,
+            'about' => $this->about,
+            'chat_service_active' => $this->chat_service_active,
+            'chat_service_fee' => $this->chat_service_fee,
+            'video_call_service_active' => $this->video_call_service_active,
+            'video_call_service_fee' => $this->video_call_service_fee,
+            'home_visit_service_active' => $this->home_visit_service_active,
+            'home_visit_service_fee' => $this->home_visit_service_fee,
+        ];
     }
 }

@@ -3,24 +3,19 @@
 namespace App\Http\Controllers\Doctor;
 
 use App\Http\Controllers\Controller;
-use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Models\Doctor;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the doctor's profile.
-     *
-     * @return \Inertia\Response
-     */
     public function index()
     {
         $doctor = Auth::user()->doctor->load('user');
-        
-        // Get the doctor's statistics
+
         $statistics = [
             'totalConsultations' => $doctor->consultations()->count(),
             'chatConsultations' => $doctor->consultations()->where('type', 'chat')->count(),
@@ -28,113 +23,109 @@ class ProfileController extends Controller
             'visitConsultations' => $doctor->consultations()->where('type', 'visit')->count(),
             'completed' => $doctor->consultations()->where('is_completed', true)->count(),
         ];
-        
+
         return Inertia::render('Doctor/Profile/Index', [
-            'doctor' => $doctor,
-            'statistics' => $statistics
+            'doctor' => $doctor->toProfileData(),
+            'statistics' => $statistics,
         ]);
     }
 
-    /**
-     * Show the form for editing the doctor's profile.
-     *
-     * @return \Inertia\Response
-     */
     public function edit()
     {
         $doctor = Auth::user()->doctor->load('user');
-        
+
         return Inertia::render('Doctor/Profile/Index', [
-            'doctor' => $doctor
+            'doctor' => $doctor->toProfileData()
         ]);
     }
 
-    /**
-     * Update the doctor's profile.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(Request $request)
     {
-        $doctor = Auth::user()->doctor;
-        
-        $request->validate([
-            'specialty' => 'required|string|max:255',
-            'experience_years' => 'required|integer|min:0',
-            'education' => 'required|string|max:255',
-            'license_number' => 'required|string|max:50',
-            'bio' => 'nullable|string|max:1000',
-            'availability' => 'required|string|max:255',
-            'service_areas' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|max:2048', // Max 2MB
-            
-            // User fields
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|email',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
+            'license_number' => 'nullable|string|max:50',
+            'years_experience' => 'nullable|integer|min:0',
+            'working_hours' => 'nullable|string|max:100',
+            'practice_address' => 'nullable|string|max:255',
+            'about' => 'nullable|string',
         ]);
-        
-        // Update user information
-        $doctor->user->update([
-            'name' => $request->name,
-            'phone' => $request->phone,
-            'address' => $request->address,
-        ]);
-        
-        // Handle profile photo upload
-        if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-            if ($doctor->photo && Storage::disk('public')->exists($doctor->photo)) {
-                Storage::disk('public')->delete($doctor->photo);
-            }
-            
-            $path = $request->file('photo')->store('doctor-photos', 'public');
-            $doctor->photo = $path;
+
+        $doctor = Auth::user()->doctor;
+
+        try {
+            DB::beginTransaction();
+
+            $doctor->user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+            ]);
+
+            $doctor->update([
+                'license_number' => $validated['license_number'],
+                'years_experience' => $validated['years_experience'],
+                'working_hours' => $validated['working_hours'],
+                'practice_address' => $validated['practice_address'],
+                'about' => $validated['about'],
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Profil berhasil diperbarui');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Gagal update profil dokter:', ['error' => $e->getMessage()]);
+
+            return redirect()->back()->with('error', 'Gagal memperbarui profil');
         }
-        
-        // Update doctor information
-        $doctor->update([
-            'specialty' => $request->specialty,
-            'experience_years' => $request->experience_years,
-            'education' => $request->education,
-            'license_number' => $request->license_number,
-            'bio' => $request->bio,
-            'availability' => $request->availability,
-            'service_areas' => $request->service_areas,
-        ]);
-        
-        return redirect()->route('doctor.profile.index')->with('message', 'Profile updated successfully');
     }
 
-    /**
-     * Update doctor's consultation settings.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
+
     public function updateSettings(Request $request)
     {
-        $doctor = Auth::user()->doctor;
-        
+        $validated = $request->validate([
+            'chat_service_active' => 'boolean',
+            'chat_service_fee' => 'nullable|integer|min:0',
+            'video_call_service_active' => 'boolean',
+            'video_call_service_fee' => 'nullable|integer|min:0',
+            'home_visit_service_active' => 'boolean',
+            'home_visit_service_fee' => 'nullable|integer|min:0',
+        ]);
+
+        try {
+            $doctor = Auth::user()->doctor;
+            $doctor->update($validated);
+
+            return back()->with('success', 'Pengaturan layanan berhasil diperbarui');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui pengaturan layanan');
+        }
+    }
+
+    public function updatePassword(Request $request)
+    {
         $request->validate([
-            'chat_rate' => 'nullable|numeric|min:0',
-            'video_rate' => 'nullable|numeric|min:0',
-            'visit_rate' => 'nullable|numeric|min:0',
-            'accepts_chat' => 'boolean',
-            'accepts_video' => 'boolean',
-            'accepts_visit' => 'boolean',
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
         ]);
-        
-        $doctor->update([
-            'chat_rate' => $request->chat_rate,
-            'video_rate' => $request->video_rate,
-            'visit_rate' => $request->visit_rate,
-            'accepts_chat' => $request->accepts_chat,
-            'accepts_video' => $request->accepts_video,
-            'accepts_visit' => $request->accepts_visit,
-        ]);
-        
-        return redirect()->route('doctor.profile.index')->with('message', 'Consultation settings updated successfully');
+
+        $user = Auth::user();
+
+        // Verifikasi password lama
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors([
+                'current_password' => 'Password saat ini tidak cocok'
+            ]);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return redirect()->route('doctor.profile.edit')->with('success', 'Password berhasil diperbarui');
     }
 }

@@ -3,7 +3,7 @@
 
 // export default function NavBar({ user }) {
 //     const [isOpen, setIsOpen] = useState(false);
-    
+
 //     return (
 //         <nav className="bg-white shadow-soft">
 //             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,12 +15,12 @@
 //                             </Link>
 //                         </div>
 //                     </div>
-                    
+
 //                     <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
 //                         {user ? (
 //                             <>
 //                                 <div className="relative">
-//                                     <button 
+//                                     <button
 //                                         onClick={() => setIsOpen(!isOpen)}
 //                                         className="flex items-center space-x-2 text-neutral-dark hover:text-primary transition duration-150 ease-in-out"
 //                                     >
@@ -29,18 +29,18 @@
 //                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 //                                         </svg>
 //                                     </button>
-                                    
+
 //                                     {isOpen && (
 //                                         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-50">
-//                                             <Link 
+//                                             <Link
 //                                                 href={`/${user.role}/profile`}
 //                                                 className="block px-4 py-2 text-sm text-neutral-dark hover:bg-neutral-lightest"
 //                                             >
 //                                                 Profil
 //                                             </Link>
-//                                             <Link 
-//                                                 href="/logout" 
-//                                                 method="post" 
+//                                             <Link
+//                                                 href="/logout"
+//                                                 method="post"
 //                                                 as="button"
 //                                                 className="block w-full text-left px-4 py-2 text-sm text-neutral-dark hover:bg-neutral-lightest"
 //                                             >
@@ -52,13 +52,13 @@
 //                             </>
 //                         ) : (
 //                             <>
-//                                 <Link 
+//                                 <Link
 //                                     href="/login"
 //                                     className="text-neutral-dark hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
 //                                 >
 //                                     Masuk
 //                                 </Link>
-//                                 <Link 
+//                                 <Link
 //                                     href="/register"
 //                                     className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-md text-sm font-medium"
 //                                 >
@@ -67,9 +67,9 @@
 //                             </>
 //                         )}
 //                     </div>
-                    
+
 //                     <div className="flex items-center md:hidden">
-//                         <button 
+//                         <button
 //                             onClick={() => setIsOpen(!isOpen)}
 //                             className="inline-flex items-center justify-center p-2 rounded-md text-neutral-dark hover:text-primary hover:bg-neutral-lightest focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
 //                         >
@@ -84,7 +84,7 @@
 //                     </div>
 //                 </div>
 //             </div>
-            
+
 //             <div className={`${isOpen ? 'block' : 'hidden'} md:hidden`}>
 //                 <div className="pt-2 pb-3 space-y-1">
 //                     {user ? (
