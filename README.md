@@ -1,21 +1,21 @@
 ## Fitur yang sudah berfungsi
-A. Login dan Register semua role, termasuk lupa password, dll.
+####A. Login dan Register semua role, termasuk lupa password, dll.
 
-B. Welcome page
+####B. Welcome page
 
-C. Role Admin
+####C. Role Admin
 1. Menerima dan Menolak pengajuan akun user Dokter/Toko
 2. Menonaktifkan dan Meangakifkan akun user
 3. Mengelola Artikel(CRUD)
 
-D. Role Dokter
+####D. Role Dokter
 1. Profil Dokter
 
-C. Role Toko
+####C. Role Toko
 1. Profil Toko
 2. Kelola Produk (CRUD)
 
-D. Role Peternak
+####D. Role Peternak
 1. Profil
 2. Panggil Dokter(cuma tampilan dokter yang tersedia)
 3. Pasar Ternak(sampai Checkout, kurang bagian pembayaran)
@@ -23,22 +23,22 @@ D. Role Peternak
 5. Beranda/Home
 
 ## Fitur yang sudah dibuat tapi memakai data dummy
-A. Role Dokter
+####A. Role Dokter
 1. Dashboard
 2. Konsultasi
 3. Riwayat Konsultasi
 
 
-B. Role Toko
+####B. Role Toko
 1. Dashboard
 2. Transaksi
 3. Riwayat Transaksi
 
-C. Role Peternak
+####C. Role Peternak
 1. Notifikasi
 
 ## Fitur yang belum dibuat
-A. Role Peternak
+####A. Role Peternak
 1. Pembayaran
 2. Riwayat aktifitas
 3. Panduan penggunaan
