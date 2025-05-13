@@ -36,6 +36,18 @@ class Shop extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+    
+    // Relasi ke Product
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    // Relasi ke Transaction
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 
     // Relasi ke BankAccount
     public function bankAccount()

@@ -9,6 +9,7 @@ use Inertia\Inertia;
 
 class ArticleController extends Controller
 {
+
     public function index(Request $request)
     {
         $search = $request->input('search', '');
@@ -17,13 +18,21 @@ class ArticleController extends Controller
         $articles = Article::query()
             ->where('is_published', 1)
             ->orderByDesc('created_at')
-            ->when($search, function ($q, $search) {
-                $q->where(function ($q) use ($search) {
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
-                      ->orWhere('content', 'like', "%{$search}%");
+                    ->orWhere('content', 'like', "%{$search}%");
                 });
             })
-            ->when($category, fn($q) => $q->where('category', $category))
+            ->when($category !== '', function ($query) use ($category) {
+                if ($category === 'umum') {
+                    $query->where(function ($q) {
+                        $q->whereNull('category')->orWhere('category', '');
+                    });
+                } else {
+                    $query->where('category', $category);
+                }
+            })
             ->paginate(9)
             ->withQueryString();
 
@@ -38,6 +47,7 @@ class ArticleController extends Controller
             ],
         ]);
     }
+
 
     public function show($slug)
     {

@@ -12,9 +12,9 @@ const Articles = ({ auth, articles, filters }) => {
 
     const categories = [
         "all",
+        "umum",
         "kesehatan",
         "pakan",
-        "reproduksi",
         "pemeliharaan",
         "tips",
     ];

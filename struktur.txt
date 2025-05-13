@@ -59,6 +59,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |       RoleMiddleware.php
 |   |       
 |   \---Requests
+|       |   ProductRequest.php
 |       |   ProfileUpdateRequest.php
 |       |   
 |       \---Auth
@@ -126,6 +127,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |       2025_05_12_042558_add_photo_columns_to_users_table.php
 |       2025_05_12_125300_add_consultation_services_to_doctors_table.php.php
 |       2025_05_12_171101_create_bank_accounts_table.php
+|       2025_05_13_131048_remove_status_column_from_products_table.php
 |       
 \---seeders
         AdminUserSeeder.php
@@ -262,6 +264,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   |       
 |   |   |   +---Marketplace
 |   |   |   |       Index.jsx
+|   |   |   |       Product.jsx
 |   |   |   |       
 |   |   |   \---Profile
 |   |   |           Index.jsx
@@ -281,6 +284,8 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |       |       Index.jsx
 |   |       |       
 |   |       +---ManageProduct
+|   |       |       Create.jsx
+|   |       |       Edit.jsx
 |   |       |       Index.jsx
 |   |       |       
 |   |       +---Profile

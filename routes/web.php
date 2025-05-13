@@ -217,20 +217,17 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
 
     // Marketplace
     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
+    Route::get('/marketplace/product/{id}', [MarketplaceController::class, 'showProduct'])->name('marketplace.product');
+    Route::get('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
     Route::get('/marketplace/shops/{shop}', [MarketplaceController::class, 'shopDetail'])->name('marketplace.shop');
-    Route::get('/marketplace/products/{product}', [MarketplaceController::class, 'productDetail'])->name('marketplace.product');
     Route::post('/marketplace/cart/add', [MarketplaceController::class, 'addToCart'])->name('marketplace.cart.add');
     Route::get('/marketplace/cart', [MarketplaceController::class, 'viewCart'])->name('marketplace.cart');
     Route::delete('/marketplace/cart/{productId}', [MarketplaceController::class, 'removeFromCart'])->name('marketplace.cart.remove');
-    Route::post('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
+
 
     // Artikel dan Aktivitas
-    Route::get('/artikel', [App\Http\Controllers\Farmer\ArticleController::class, 'index'])
-        ->name('articles');
-
-    // Rute untuk halaman detail artikel
-    Route::get('/artikel/{slug}', [App\Http\Controllers\Farmer\ArticleController::class, 'show'])
-        ->name('articles.show');
+    Route::get('/artikel', [App\Http\Controllers\Farmer\ArticleController::class, 'index'])->name('articles');
+    Route::get('/artikel/{slug}', [App\Http\Controllers\Farmer\ArticleController::class, 'show'])->name('articles.show');
 
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity');
 

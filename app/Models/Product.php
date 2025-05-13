@@ -33,6 +33,7 @@ class Product extends Model
      */
     protected $casts = [
         'price' => 'decimal:2',
+        'stock' => 'integer',
         'is_active' => 'boolean',
         'featured' => 'boolean',
         'created_at' => 'datetime',
@@ -45,5 +46,10 @@ class Product extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function transactionItems()
+    {
+        return $this->hasMany(TransactionItem::class);
     }
 }

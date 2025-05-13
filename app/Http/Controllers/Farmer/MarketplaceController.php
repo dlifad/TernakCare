@@ -4,335 +4,163 @@ namespace App\Http\Controllers\Farmer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Models\Shop;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class MarketplaceController extends Controller
 {
     /**
-     * Display the marketplace with products.
+     * Display the marketplace with filtered, sorted, and paginated products.
      */
     public function index(Request $request)
     {
-        $query = Product::query()->with('shop.user')->where('status', 'active');
+        $filters = $request->only(['category', 'search', 'sort']);
+        $products = Product::query()
+            ->with('shop.user')
+            ->where('is_active', 1)
+            ->when(
+                ($filters['category'] ?? null) && $filters['category'] !== 'all',
+                fn($q) => $q->where('category', $filters['category'])
+            )
+            ->when($filters['search'] ?? null, fn($q, $search) => $q->where('name', 'like', '%' . $search . '%'))
+            ->when($filters['sort'] ?? null, function ($q, $sort) {
+                return match ($sort) {
+                    'oldest'     => $q->orderBy('created_at', 'asc'),
+                    'price_low'  => $q->orderBy('price', 'asc'),
+                    'price_high' => $q->orderBy('price', 'desc'),
+                    default      => $q->orderBy('created_at', 'desc'),
+                };
+            }, fn($q) => $q->orderBy('created_at', 'desc'))
+            ->paginate(12)
+            ->withQueryString();
 
-        // Apply filters
-        if ($request->has('category')) {
-            $query->where('category', $request->category);
-        }
 
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->has('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-
-        if ($request->has('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        // Get products
-        $products = $query->orderBy('created_at', 'desc')->paginate(12);
-
-        // Get all categories for filter
-        $categories = Product::distinct('category')->pluck('category');
+        $categories = Product::where('is_active', 1)
+            ->whereNotNull('category')
+            ->distinct()
+            ->pluck('category');
 
         return Inertia::render('Farmer/Marketplace/Index', [
-            'products' => $products,
+            'products'   => $products,
             'categories' => $categories,
-            'filters' => $request->only(['category', 'search', 'min_price', 'max_price']),
+            'filters'    => $filters,
         ]);
     }
 
     /**
-     * Display a specific product.
+     * Display a specific product and its related products.
      */
     public function showProduct($id)
     {
-        $product = Product::with(['shop.user'])->findOrFail($id);
-        
-        // Get related products from the same category
+        // Temukan produk berdasarkan ID dengan data toko dan user
+        $product = Product::with(['shop.user', 'shop.bankAccount'])
+            ->where('is_active', 1)
+            ->findOrFail($id);
+
+        // Temukan produk terkait berdasarkan kategori yang sama
         $relatedProducts = Product::where('category', $product->category)
             ->where('id', '!=', $product->id)
-            ->take(4)
+            ->where('is_active', 1)
+            ->with('shop.user')
+            ->limit(4)
             ->get();
 
         return Inertia::render('Farmer/Marketplace/Product', [
-            'product' => $product,
+            'product'         => $product,
             'relatedProducts' => $relatedProducts,
         ]);
     }
-
+    
     /**
-     * Add a product to cart.
+     * Display checkout page for a product.
      */
-    public function addToCart(Request $request, $id)
+    public function checkout(Request $request)
     {
         $request->validate([
+            'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
         ]);
-
-        $product = Product::findOrFail($id);
-
-        // Get or create cart session
-        $cart = session()->get('cart', []);
-
-        // Add or update product in cart
-        if (isset($cart[$id])) {
-            $cart[$id]['quantity'] += $request->quantity;
-        } else {
-            $cart[$id] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'quantity' => $request->quantity,
-                'image' => $product->image,
-                'shop_id' => $product->shop_id,
-                'shop_name' => $product->shop->shop_name,
-            ];
-        }
-
-        session()->put('cart', $cart);
-
-        return back()->with('message', 'Product added to cart successfully.');
-    }
-
-    /**
-     * Display the cart.
-     */
-    public function cart()
-    {
-        $cart = session()->get('cart', []);
         
-        // Group cart items by shop
-        $groupedCart = [];
-        $total = 0;
-        
-        foreach ($cart as $item) {
-            $shopId = $item['shop_id'];
+        $product = Product::with(['shop.user', 'shop.bankAccount'])
+            ->where('is_active', 1)
+            ->findOrFail($request->product_id);
             
-            if (!isset($groupedCart[$shopId])) {
-                $groupedCart[$shopId] = [
-                    'shop_id' => $shopId,
-                    'shop_name' => $item['shop_name'],
-                    'items' => [],
-                    'subtotal' => 0,
-                ];
-            }
-            
-            $groupedCart[$shopId]['items'][] = $item;
-            $itemTotal = $item['price'] * $item['quantity'];
-            $groupedCart[$shopId]['subtotal'] += $itemTotal;
-            $total += $itemTotal;
-        }
-
-        return Inertia::render('Farmer/Marketplace/Cart', [
-            'cart' => array_values($groupedCart),
-            'total' => $total,
-        ]);
-    }
-
-    /**
-     * Update cart quantities.
-     */
-    public function updateCart(Request $request)
-    {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|integer|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-        ]);
-
-        $cart = session()->get('cart', []);
-
-        foreach ($request->items as $item) {
-            if (isset($cart[$item['id']])) {
-                $cart[$item['id']]['quantity'] = $item['quantity'];
-            }
-        }
-
-        session()->put('cart', $cart);
-
-        return back()->with('message', 'Cart updated successfully.');
-    }
-
-    /**
-     * Remove an item from cart.
-     */
-    public function removeFromCart($id)
-    {
-        $cart = session()->get('cart', []);
-
-        if (isset($cart[$id])) {
-            unset($cart[$id]);
-            session()->put('cart', $cart);
-        }
-
-        return back()->with('message', 'Item removed from cart successfully.');
-    }
-
-    /**
-     * Display checkout page.
-     */
-    public function checkout()
-    {
-        $cart = session()->get('cart', []);
-        
-        if (empty($cart)) {
-            return redirect()->route('farmer.marketplace.cart')
-                ->with('error', 'Your cart is empty.');
+        // Validasi stok
+        if ($product->stock < $request->quantity) {
+            return redirect()->back()->with('error', 'Stok produk tidak mencukupi');
         }
         
-        // Group by shop for checkout
-        $groupedCart = [];
-        $total = 0;
+        $farmer = Auth::user()->farmer;
         
-        foreach ($cart as $item) {
-            $shopId = $item['shop_id'];
-            
-            if (!isset($groupedCart[$shopId])) {
-                $groupedCart[$shopId] = [
-                    'shop_id' => $shopId,
-                    'shop_name' => $item['shop_name'],
-                    'items' => [],
-                    'subtotal' => 0,
-                ];
-            }
-            
-            $groupedCart[$shopId]['items'][] = $item;
-            $itemTotal = $item['price'] * $item['quantity'];
-            $groupedCart[$shopId]['subtotal'] += $itemTotal;
-            $total += $itemTotal;
-        }
-
         return Inertia::render('Farmer/Marketplace/Checkout', [
-            'cart' => array_values($groupedCart),
-            'total' => $total,
-            'farmer' => Auth::user()->farmer,
+            'product' => $product,
+            'quantity' => $request->quantity,
+            'farmer' => $farmer,
+            'total' => $product->price * $request->quantity,
         ]);
     }
-
+    
     /**
-     * Process the order.
+     * Process the order and create transaction records.
      */
-    public function placeOrder(Request $request)
+    public function processOrder(Request $request)
     {
         $request->validate([
-            'shipping_address' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'payment_method' => 'required|string|in:cod,bank_transfer,e-wallet',
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'shipping_address' => 'required|string',
+            'shipping_phone' => 'required|string',
+            'payment_method' => 'required|string',
+            'notes' => 'nullable|string',
         ]);
-
-        $cart = session()->get('cart', []);
         
-        if (empty($cart)) {
-            return redirect()->route('farmer.marketplace.cart')
-                ->with('error', 'Your cart is empty.');
-        }
-
-        // Group by shop
-        $groupedCart = [];
-        
-        foreach ($cart as $item) {
-            $shopId = $item['shop_id'];
+        // Mendapatkan data produk
+        $product = Product::with('shop')
+            ->where('is_active', 1)
+            ->findOrFail($request->product_id);
             
-            if (!isset($groupedCart[$shopId])) {
-                $groupedCart[$shopId] = [
-                    'shop_id' => $shopId,
-                    'items' => [],
-                    'subtotal' => 0,
-                ];
-            }
-            
-            $groupedCart[$shopId]['items'][] = $item;
-            $itemTotal = $item['price'] * $item['quantity'];
-            $groupedCart[$shopId]['subtotal'] += $itemTotal;
+        // Validasi stok
+        if ($product->stock < $request->quantity) {
+            return redirect()->back()->with('error', 'Stok produk tidak mencukupi');
         }
-
-        // Create transactions for each shop
-        foreach ($groupedCart as $shopId => $shopOrder) {
-            $transaction = Transaction::create([
-                'farmer_id' => Auth::user()->farmer->id,
-                'shop_id' => $shopId,
-                'total_amount' => $shopOrder['subtotal'],
-                'shipping_address' => $request->shipping_address,
-                'phone' => $request->phone,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
-            ]);
-
-            // Create transaction items
-            foreach ($shopOrder['items'] as $item) {
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id' => $item['id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'subtotal' => $item['price'] * $item['quantity'],
-                ]);
-            }
-        }
-
-        // Clear cart
-        session()->forget('cart');
-
-        return redirect()->route('farmer.activity.index')
-            ->with('message', 'Order placed successfully.');
-    }
-
-    /**
-     * Display a list of shops.
-     */
-    public function shops()
-    {
-        $shops = Shop::whereHas('user', function ($query) {
-            $query->where('status', 'active');
-        })->with('user')
-            ->withCount('products')
-            ->paginate(12);
-
-        return Inertia::render('Farmer/Marketplace/Shops', [
-            'shops' => $shops,
-        ]);
-    }
-
-    /**
-     * Display a specific shop with its products.
-     */
-    public function showShop($id, Request $request)
-    {
-        $shop = Shop::with('user')->findOrFail($id);
         
-        $query = Product::where('shop_id', $id)->where('status', 'active');
-
-        // Apply filters
-        if ($request->has('category')) {
-            $query->where('category', $request->category);
-        }
-
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        // Get shop products
-        $products = $query->orderBy('created_at', 'desc')->paginate(12);
-
-        // Get shop categories
-        $categories = Product::where('shop_id', $id)
-            ->distinct('category')
-            ->pluck('category');
-
-        return Inertia::render('Farmer/Marketplace/Shop', [
-            'shop' => $shop,
-            'products' => $products,
-            'categories' => $categories,
-            'filters' => $request->only(['category', 'search']),
+        // Mendapatkan data petani yang login
+        $farmer = Auth::user()->farmer;
+        
+        // Membuat kode transaksi unik
+        $transaction_code = 'TRX-' . Str::upper(Str::random(8));
+        
+        // Hitung total harga
+        $subtotal = $product->price * $request->quantity;
+        
+        // Buat transaksi baru
+        $transaction = Transaction::create([
+            'farmer_id' => $farmer->id,
+            'shop_id' => $product->shop->id,
+            'transaction_code' => $transaction_code,
+            'total_amount' => $subtotal,
+            'status' => 'pending',
+            'shipping_address' => $request->shipping_address,
+            'shipping_phone' => $request->shipping_phone,
+            'notes' => $request->notes,
         ]);
+        
+        // Buat item transaksi
+        TransactionItem::create([
+            'transaction_id' => $transaction->id,
+            'product_id' => $product->id,
+            'quantity' => $request->quantity,
+            'price' => $product->price,
+            'subtotal' => $subtotal,
+        ]);
+        
+        // Kurangi stok produk
+        $product->decrement('stock', $request->quantity);
+        
+        return redirect()->route('farmer.activity.index')->with('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran untuk menyelesaikan pesanan.');
     }
 }
