@@ -39,10 +39,10 @@
 
 ## Fitur yang belum dibuat
 #### A. Role Peternak
-1. Pembayaran
+1. Prose pembayaran
 2. Riwayat aktifitas
 3. Panduan penggunaan
-4. ...
+4. Proses konsultasi
 
 ## Perlu perbaikan
 1. Poto profil beberapa role belum ada / belum sinkron dengan navbar dan sidebar
