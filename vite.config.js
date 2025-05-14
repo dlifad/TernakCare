@@ -16,4 +16,9 @@ export default defineConfig({
             "@": path.resolve(__dirname, "resources/js"),
         },
     },
+    define: {
+        'process.env': {
+        VITE_MIDTRANS_CLIENT_KEY: JSON.stringify(process.env.VITE_MIDTRANS_CLIENT_KEY),
+    },
+    }
 });

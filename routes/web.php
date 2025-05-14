@@ -240,7 +240,9 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
     Route::get('/placeholder/{width}/{height}', [ProfileController::class, 'placeholder']);
 });
 
-Route::get('/payment/token', [PaymentController::class, 'getSnapToken']);
+Route::post('/farmer/marketplace/payment', [PaymentController::class, 'getSnapToken'])
+    ->name('farmer.marketplace.payment');
+
 
 
 require __DIR__ . '/auth.php';
