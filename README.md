@@ -14,6 +14,7 @@
 #### E. Role Toko
 1. Profil Toko
 2. Kelola Produk (CRUD)
+3. Dashboard
 
 #### F. Role Peternak
 1. Profil
@@ -30,7 +31,7 @@
 
 
 #### B. Role Toko
-1. Dashboard
+1. 
 2. Transaksi
 3. Riwayat Transaksi
 
