@@ -52,3 +52,4 @@
 
 ## Proses pengerjaan
 1. Transaksi di Role toko
+2. Pemnbayaran di role peternak
