@@ -3,16 +3,31 @@
 namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
+use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index()
+    protected $transactionService;
+    
+    public function __construct(TransactionService $transactionService)
     {
-        // Di sini Anda bisa menambahkan logika untuk mengambil data 
-        // yang diperlukan untuk dashboard toko
+        $this->transactionService = $transactionService;
+    }
+    
+    /**
+     * Menampilkan dashboard toko
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
+     */
+    public function index(Request $request)
+    {
+        $shopId = auth()->user()->shop->id;
         
-        return Inertia::render('Shop/Dashboard');
+        return Inertia::render('Shop/Dashboard', [
+            'dashboardData' => $this->transactionService->getTransactionSummary($shopId),
+        ]);
     }
 }

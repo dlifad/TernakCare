@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
@@ -71,11 +73,17 @@ class TransactionController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        $transaction->load(['farmer.user', 'items.product']);
+        // Load transaction with relationships
+        $transaction->load([
+            'farmer.user', 
+            'items.product',
+            'bankAccount'
+        ]);
         
         return Inertia::render('Shop/Transactions/Show', [
             'transaction' => $transaction,
-            'shopItems' => $shopProducts
+            'shopItems' => $shopProducts,
+            'statuses' => $this->getTransactionStatuses()
         ]);
     }
 
@@ -103,15 +111,32 @@ class TransactionController extends Controller
             'shipping_notes' => 'nullable|string|max:255',
         ]);
         
-        // Update transaction status
-        $transaction->update([
-            'status' => $request->status,
-            'tracking_number' => $request->tracking_number,
-            'shipping_notes' => $request->shipping_notes,
-        ]);
-        
-        return redirect()->route('shop.transactions.index')
-            ->with('message', 'Transaction status updated successfully');
+        try {
+            return DB::transaction(function() use ($request, $transaction, $shopProducts) {
+                $oldStatus = $transaction->status;
+                
+                // Update transaction status
+                $transaction->update([
+                    'status' => $request->status,
+                    'tracking_number' => $request->tracking_number,
+                    'shipping_notes' => $request->shipping_notes,
+                ]);
+                
+                // Pengembalian stok jika status menjadi 'cancelled'
+                if ($request->status === 'cancelled' && $oldStatus !== 'cancelled') {
+                    foreach ($shopProducts as $item) {
+                        $product = Product::find($item->product_id);
+                        if ($product) {
+                            $product->increment('stock', $item->quantity);
+                        }
+                    }
+                }
+                
+                return redirect()->back()->with('success', 'Status transaksi berhasil diperbarui');
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memperbarui status transaksi: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -128,18 +153,26 @@ class TransactionController extends Controller
             'items.*' => 'exists:transaction_items,id',
         ]);
         
-        foreach ($request->items as $itemId) {
-            $item = TransactionItem::find($itemId);
+        try {
+            DB::transaction(function() use ($request, $transaction) {
+                foreach ($request->items as $itemId) {
+                    $item = TransactionItem::find($itemId);
+                    
+                    // Check if the item belongs to the transaction and the product belongs to the shop
+                    if ($item->transaction_id === $transaction->id && 
+                        $item->product && 
+                        $item->product->shop_id === Auth::user()->shop->id) {
+                        $item->update([
+                            'status' => 'processed'
+                        ]);
+                    }
+                }
+            });
             
-            // Check if the item belongs to the transaction and the product belongs to the shop
-            if ($item->transaction_id === $transaction->id && $item->product->shop_id === Auth::user()->shop->id) {
-                $item->update([
-                    'status' => 'processed'
-                ]);
-            }
+            return back()->with('message', 'Items marked as processed successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to process items: ' . $e->getMessage());
         }
-        
-        return back()->with('message', 'Items marked as processed successfully');
     }
 
     /**

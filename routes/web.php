@@ -21,6 +21,7 @@ use App\Http\Controllers\Shop\HistoryController as ShopHistoryController;
 use App\Http\Controllers\Shop\ProductController;
 use App\Http\Controllers\Shop\ProfileController as ShopProfileController;
 use App\Http\Controllers\Shop\TransactionController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -189,7 +190,7 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
     // Transaksi
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
-    Route::patch('/transactions/{transaction}/update-status', [TransactionController::class, 'updateStatus'])->name('transactions.update-status');
+    Route::post('/transactions/{transaction}/update-status', [TransactionController::class, 'updateStatus'])->name('transactions.update-status');
 
     // Riwayat dan Profil
     Route::get('/history', [ShopHistoryController::class, 'index'])->name('history');
@@ -219,10 +220,11 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
     Route::get('/marketplace/product/{id}', [MarketplaceController::class, 'showProduct'])->name('marketplace.product');
     Route::get('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
-    Route::get('/marketplace/shops/{shop}', [MarketplaceController::class, 'shopDetail'])->name('marketplace.shop');
-    Route::post('/marketplace/cart/add', [MarketplaceController::class, 'addToCart'])->name('marketplace.cart.add');
-    Route::get('/marketplace/cart', [MarketplaceController::class, 'viewCart'])->name('marketplace.cart');
-    Route::delete('/marketplace/cart/{productId}', [MarketplaceController::class, 'removeFromCart'])->name('marketplace.cart.remove');
+    // Tambahkan baris berikut:
+    Route::post('/marketplace/process-order', [MarketplaceController::class, 'processOrder'])->name('marketplace.process-order');
+
+    Route::get('/payment-confirmation/{transaction}', [MarketplaceController::class, 'paymentConfirmation'])->name('payment.confirmation');
+    Route::post('/process-payment-confirmation', [MarketplaceController::class, 'processPaymentConfirmation'])->name('payment.process');
 
 
     // Artikel dan Aktivitas
@@ -237,5 +239,8 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.update-password');
     Route::get('/placeholder/{width}/{height}', [ProfileController::class, 'placeholder']);
 });
+
+Route::get('/payment/token', [PaymentController::class, 'getSnapToken']);
+
 
 require __DIR__ . '/auth.php';

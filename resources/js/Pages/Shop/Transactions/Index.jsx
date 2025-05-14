@@ -1,51 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     ShoppingBag,
     ChevronDown,
     ChevronUp,
     Search,
     Filter,
+    Calendar
 } from "lucide-react";
 import ShopLayout from "@/Layouts/ShopLayout";
-import { Head } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
-export default function Transactions({ auth }) {
-    const [activeTab, setActiveTab] = useState("all");
+export default function Transactions({ auth, transactions, filters, statuses }) {
+    const [activeTab, setActiveTab] = useState(filters?.status || "all");
     const [expandedOrders, setExpandedOrders] = useState([]);
+    const [searchTerm, setSearchTerm] = useState(filters?.search || "");
+    const [startDate, setStartDate] = useState(filters?.start_date || "");
+    const [endDate, setEndDate] = useState(filters?.end_date || "");
 
-    // Sample data for demonstration
-    const transactions = [
-        {
-            id: "TRX-001",
-            customer: "Ahmad Fajar",
-            date: "10 May 2025",
-            total: 750000,
-            status: "pending",
-            items: [
-                { name: "Pakan Ternak Premium", quantity: 2, price: 250000 },
-                { name: "Vitamin Ternak", quantity: 1, price: 250000 },
-            ],
-        },
-        {
-            id: "TRX-002",
-            customer: "Budi Santoso",
-            date: "9 May 2025",
-            total: 450000,
-            status: "processing",
-            items: [{ name: "Obat Ternak", quantity: 3, price: 150000 }],
-        },
-        {
-            id: "TRX-003",
-            customer: "Citra Dewi",
-            date: "8 May 2025",
-            total: 1250000,
-            status: "shipped",
-            items: [
-                { name: "Pakan Ternak Regular", quantity: 5, price: 150000 },
-                { name: "Alat Perah Susu", quantity: 1, price: 500000 },
-            ],
-        },
-    ];
+    useEffect(() => {
+        // Update URL when tab changes
+        if (activeTab !== (filters?.status || "all")) {
+            updateFilters({ status: activeTab === "all" ? null : activeTab });
+        }
+    }, [activeTab]);
+
+    const updateFilters = (newFilters) => {
+        router.get(route('shop.transactions.index'), {
+            ...filters,
+            ...newFilters
+        }, {
+            preserveState: true,
+            replace: true
+        });
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        updateFilters({ search: searchTerm });
+    };
+
+    const handleDateFilter = () => {
+        updateFilters({
+            start_date: startDate,
+            end_date: endDate
+        });
+    };
 
     const toggleOrderExpand = (orderId) => {
         if (expandedOrders.includes(orderId)) {
@@ -54,11 +55,6 @@ export default function Transactions({ auth }) {
             setExpandedOrders([...expandedOrders, orderId]);
         }
     };
-
-    const filteredTransactions =
-        activeTab === "all"
-            ? transactions
-            : transactions.filter((tx) => tx.status === activeTab);
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat("id-ID", {
@@ -85,6 +81,15 @@ export default function Transactions({ auth }) {
         }
     };
 
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return format(date, 'd MMMM yyyy', { locale: id });
+    };
+
+    const getStatusLabel = (status) => {
+        return statuses[status] || status;
+    };
+
     return (
         <ShopLayout user={auth.user}>
             <Head title="Transaksi" />
@@ -100,68 +105,70 @@ export default function Transactions({ auth }) {
 
                 {/* Search and Filter */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
+                    <form onSubmit={handleSearch} className="relative flex-1">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search size={18} className="text-neutral" />
                         </div>
                         <input
                             type="text"
-                            placeholder="Cari transaksi..."
+                            placeholder="Cari nama peternak..."
                             className="block w-full pl-10 pr-3 py-2 border border-neutral-light rounded-lg focus:ring-primary focus:border-primary"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                    </div>
+                    </form>
                     <div className="flex gap-2">
-                        <div className="relative">
-                            <select className="appearance-none bg-white border border-neutral-light rounded-lg px-4 py-2 pr-8 focus:ring-primary focus:border-primary text-neutral-dark">
-                                <option>Semua Tanggal</option>
-                                <option>Hari Ini</option>
-                                <option>Minggu Ini</option>
-                                <option>Bulan Ini</option>
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-dark">
-                                <ChevronDown size={16} />
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="date"
+                                className="border border-neutral-light rounded-lg px-3 py-2"
+                                placeholder="Tanggal Mulai"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                            <span>-</span>
+                            <input
+                                type="date"
+                                className="border border-neutral-light rounded-lg px-3 py-2"
+                                placeholder="Tanggal Akhir"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                            <button 
+                                onClick={handleDateFilter}
+                                className="ml-2 flex items-center gap-1 px-3 py-2 bg-white border border-neutral-light rounded-lg text-neutral-dark hover:bg-neutral-lightest"
+                            >
+                                <Calendar size={16} />
+                                <span>Terapkan</span>
+                            </button>
                         </div>
-                        <button className="flex items-center gap-1 px-4 py-2 bg-white border border-neutral-light rounded-lg text-neutral-dark hover:bg-neutral-lightest">
-                            <Filter size={18} />
-                            <span>Filter</span>
-                        </button>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="mb-6 border-b border-neutral-light">
-                    <nav className="flex space-x-6">
+                <div className="mb-6 border-b border-neutral-light overflow-x-auto">
+                    <nav className="flex space-x-6 min-w-max">
                         <button
                             onClick={() => setActiveTab("all")}
                             className={`pb-3 px-1 ${activeTab === "all" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
                         >
                             Semua
                         </button>
-                        <button
-                            onClick={() => setActiveTab("pending")}
-                            className={`pb-3 px-1 ${activeTab === "pending" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
-                        >
-                            Menunggu Pembayaran
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("processing")}
-                            className={`pb-3 px-1 ${activeTab === "processing" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
-                        >
-                            Diproses
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("shipped")}
-                            className={`pb-3 px-1 ${activeTab === "shipped" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
-                        >
-                            Dikirim
-                        </button>
+                        {Object.entries(statuses).map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveTab(key)}
+                                className={`pb-3 px-1 ${activeTab === key ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
                     </nav>
                 </div>
 
                 {/* Transactions List */}
                 <div className="bg-white rounded-lg shadow-card">
-                    {filteredTransactions.length === 0 ? (
+                    {transactions.data.length === 0 ? (
                         <div className="p-6 text-center">
                             <ShoppingBag
                                 size={48}
@@ -177,7 +184,7 @@ export default function Transactions({ auth }) {
                     ) : (
                         <div className="overflow-hidden">
                             <ul className="divide-y divide-neutral-light">
-                                {filteredTransactions.map((transaction) => (
+                                {transactions.data.map((transaction) => (
                                     <li
                                         key={transaction.id}
                                         className="px-4 py-4 sm:px-6"
@@ -186,31 +193,16 @@ export default function Transactions({ auth }) {
                                             <div>
                                                 <div className="flex items-center">
                                                     <p className="font-medium text-neutral-darkest">
-                                                        {transaction.id}
+                                                        TRX-{String(transaction.id).padStart(3, '0')}
                                                     </p>
                                                     <span
                                                         className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(transaction.status)}`}
                                                     >
-                                                        {transaction.status ===
-                                                            "pending" &&
-                                                            "Menunggu Pembayaran"}
-                                                        {transaction.status ===
-                                                            "processing" &&
-                                                            "Diproses"}
-                                                        {transaction.status ===
-                                                            "shipped" &&
-                                                            "Dikirim"}
-                                                        {transaction.status ===
-                                                            "delivered" &&
-                                                            "Selesai"}
-                                                        {transaction.status ===
-                                                            "cancelled" &&
-                                                            "Dibatalkan"}
+                                                        {getStatusLabel(transaction.status)}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm text-neutral-dark">
-                                                    {transaction.customer} •{" "}
-                                                    {transaction.date}
+                                                    {transaction.farmer?.user?.name || 'Peternak'} • {formatDate(transaction.created_at)}
                                                 </p>
                                             </div>
                                             <div className="flex items-center">
@@ -219,36 +211,26 @@ export default function Transactions({ auth }) {
                                                         Total:
                                                     </p>
                                                     <p className="text-base font-bold text-primary-dark">
-                                                        {formatCurrency(
-                                                            transaction.total,
-                                                        )}
+                                                        {formatCurrency(transaction.total_amount)}
                                                     </p>
                                                 </div>
                                                 <button
                                                     onClick={() =>
-                                                        toggleOrderExpand(
-                                                            transaction.id,
-                                                        )
+                                                        toggleOrderExpand(transaction.id)
                                                     }
                                                     className="p-2 text-neutral-dark hover:text-primary rounded-full hover:bg-neutral-lightest"
                                                 >
-                                                    {expandedOrders.includes(
-                                                        transaction.id,
-                                                    ) ? (
+                                                    {expandedOrders.includes(transaction.id) ? (
                                                         <ChevronUp size={20} />
                                                     ) : (
-                                                        <ChevronDown
-                                                            size={20}
-                                                        />
+                                                        <ChevronDown size={20} />
                                                     )}
                                                 </button>
                                             </div>
                                         </div>
 
                                         {/* Expanded Order Details */}
-                                        {expandedOrders.includes(
-                                            transaction.id,
-                                        ) && (
+                                        {expandedOrders.includes(transaction.id) && (
                                             <div className="mt-4 border-t border-neutral-light pt-4">
                                                 <h4 className="text-sm font-medium text-neutral-darkest mb-2">
                                                     Detail Pesanan
@@ -272,37 +254,22 @@ export default function Transactions({ auth }) {
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-neutral-light">
-                                                            {transaction.items.map(
-                                                                (item, idx) => (
-                                                                    <tr
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                    >
-                                                                        <td className="px-3 py-3 text-sm text-neutral-darkest">
-                                                                            {
-                                                                                item.name
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-3 py-3 text-sm text-center text-neutral-darkest">
-                                                                            {
-                                                                                item.quantity
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-3 py-3 text-sm text-right text-neutral-darkest">
-                                                                            {formatCurrency(
-                                                                                item.price,
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="px-3 py-3 text-sm text-right font-medium text-neutral-darkest">
-                                                                            {formatCurrency(
-                                                                                item.price *
-                                                                                    item.quantity,
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                ),
-                                                            )}
+                                                            {transaction.items.map((item) => (
+                                                                <tr key={item.id}>
+                                                                    <td className="px-3 py-3 text-sm text-neutral-darkest">
+                                                                        {item.product.name}
+                                                                    </td>
+                                                                    <td className="px-3 py-3 text-sm text-center text-neutral-darkest">
+                                                                        {item.quantity}
+                                                                    </td>
+                                                                    <td className="px-3 py-3 text-sm text-right text-neutral-darkest">
+                                                                        {formatCurrency(item.product.price)}
+                                                                    </td>
+                                                                    <td className="px-3 py-3 text-sm text-right font-medium text-neutral-darkest">
+                                                                        {formatCurrency(item.product.price * item.quantity)}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
                                                         </tbody>
                                                         <tfoot>
                                                             <tr>
@@ -313,30 +280,34 @@ export default function Transactions({ auth }) {
                                                                     Total
                                                                 </td>
                                                                 <td className="px-3 py-3 text-right text-base font-bold text-primary-dark">
-                                                                    {formatCurrency(
-                                                                        transaction.total,
-                                                                    )}
+                                                                    {formatCurrency(transaction.total_amount)}
                                                                 </td>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
                                                 </div>
                                                 <div className="mt-4 flex justify-end space-x-3">
-                                                    <button className="inline-flex items-center px-4 py-2 border border-neutral-light rounded-md text-sm font-medium text-neutral-dark hover:bg-neutral-lightest">
+                                                    <a
+                                                        href={route('shop.transactions.show', transaction.id)}
+                                                        className="inline-flex items-center px-4 py-2 border border-neutral-light rounded-md text-sm font-medium text-neutral-dark hover:bg-neutral-lightest"
+                                                    >
                                                         Detail Lengkap
-                                                    </button>
-                                                    {transaction.status ===
-                                                        "pending" && (
-                                                        <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark">
-                                                            Konfirmasi
-                                                            Pembayaran
-                                                        </button>
+                                                    </a>
+                                                    {transaction.status === "pending" && (
+                                                        <a
+                                                            href={route('shop.transactions.show', transaction.id)}
+                                                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark"
+                                                        >
+                                                            Konfirmasi Pembayaran
+                                                        </a>
                                                     )}
-                                                    {transaction.status ===
-                                                        "processing" && (
-                                                        <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark">
+                                                    {transaction.status === "processing" && (
+                                                        <a
+                                                            href={route('shop.transactions.show', transaction.id)}
+                                                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark"
+                                                        >
                                                             Kirim Pesanan
-                                                        </button>
+                                                        </a>
                                                     )}
                                                 </div>
                                             </div>
@@ -344,6 +315,64 @@ export default function Transactions({ auth }) {
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    )}
+                    
+                    {/* Pagination */}
+                    {transactions.data.length > 0 && (
+                        <div className="px-4 py-3 flex items-center justify-between border-t border-neutral-light sm:px-6">
+                            <div className="flex-1 flex justify-between sm:hidden">
+                                {transactions.prev_page_url && (
+                                    <a
+                                        href={transactions.prev_page_url}
+                                        className="relative inline-flex items-center px-4 py-2 border border-neutral-light text-sm font-medium rounded-md text-neutral-dark bg-white hover:bg-neutral-lightest"
+                                    >
+                                        Sebelumnya
+                                    </a>
+                                )}
+                                {transactions.next_page_url && (
+                                    <a
+                                        href={transactions.next_page_url}
+                                        className="ml-3 relative inline-flex items-center px-4 py-2 border border-neutral-light text-sm font-medium rounded-md text-neutral-dark bg-white hover:bg-neutral-lightest"
+                                    >
+                                        Berikutnya
+                                    </a>
+                                )}
+                            </div>
+                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-sm text-neutral-dark">
+                                        Menampilkan
+                                        <span className="font-medium"> {transactions.from} </span>
+                                        sampai
+                                        <span className="font-medium"> {transactions.to} </span>
+                                        dari
+                                        <span className="font-medium"> {transactions.total} </span>
+                                        hasil
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                        {transactions.links.map((link, i) => {
+                                            if (link.url === null) return null;
+                                            return (
+                                                <a
+                                                    key={i}
+                                                    href={link.url}
+                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium whitespace-nowrap ${
+                                                        link.active
+                                                            ? 'z-10 bg-primary border-primary text-white'
+                                                            : 'bg-white border-neutral-light text-neutral-dark hover:bg-neutral-lightest'
+                                                    } ${i === 0 ? 'rounded-l-md' : ''} ${
+                                                        i === transactions.links.length - 1 ? 'rounded-r-md' : ''
+                                                    }`}
+                                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                                />
+                                            );
+                                        })}
+                                    </nav>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

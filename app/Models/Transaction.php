@@ -22,6 +22,9 @@ class Transaction extends Model
         'status',
         'shipping_address',
         'shipping_phone',
+        'notes',
+        'payment_proof',
+        'payment_date',
     ];
 
     /**
@@ -55,5 +58,13 @@ class Transaction extends Model
     public function items()
     {
         return $this->hasMany(TransactionItem::class);
+    }
+
+    /**
+ * Get the bank account associated with the transaction.
+ */
+    public function bankAccount()
+    {
+        return $this->belongsTo(BankAccount::class);
     }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import FarmerLayout from "@/Layouts/FarmerLayout";
+import { router } from '@inertiajs/react';
 
 const Checkout = ({ product, quantity, farmer, total }) => {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -40,12 +41,18 @@ const Checkout = ({ product, quantity, farmer, total }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsProcessing(true);
-        
-        post(route("farmer.marketplace.processOrder"), {
-            onSuccess: () => {
-                setShowPaymentInstructions(true);
+
+        post(route("farmer.marketplace.process-order"), {
+            onSuccess: (page) => {
+                const transactionId = page.props?.flash?.transaction?.id;
+                if (transactionId) {
+                    window.location.href = route('farmer.payment.confirmation', transactionId);
+                } else {
+                    setShowPaymentInstructions(true);
+                    setIsProcessing(false);
+                }
             },
-            onFinish: () => {
+            onError: () => {
                 setIsProcessing(false);
             }
         });

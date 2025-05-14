@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -15,10 +16,14 @@ class MarketplaceController extends Controller
 {
     /**
      * Display the marketplace with filtered, sorted, and paginated products.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
      */
     public function index(Request $request)
     {
         $filters = $request->only(['category', 'search', 'sort']);
+        
         $products = Product::query()
             ->with('shop.user')
             ->where('is_active', 1)
@@ -26,7 +31,9 @@ class MarketplaceController extends Controller
                 ($filters['category'] ?? null) && $filters['category'] !== 'all',
                 fn($q) => $q->where('category', $filters['category'])
             )
-            ->when($filters['search'] ?? null, fn($q, $search) => $q->where('name', 'like', '%' . $search . '%'))
+            ->when($filters['search'] ?? null, fn($q, $search) => 
+                $q->where('name', 'like', '%' . $search . '%')
+            )
             ->when($filters['sort'] ?? null, function ($q, $sort) {
                 return match ($sort) {
                     'oldest'     => $q->orderBy('created_at', 'asc'),
@@ -37,7 +44,6 @@ class MarketplaceController extends Controller
             }, fn($q) => $q->orderBy('created_at', 'desc'))
             ->paginate(12)
             ->withQueryString();
-
 
         $categories = Product::where('is_active', 1)
             ->whereNotNull('category')
@@ -53,6 +59,9 @@ class MarketplaceController extends Controller
 
     /**
      * Display a specific product and its related products.
+     *
+     * @param  int  $id
+     * @return \Inertia\Response
      */
     public function showProduct($id)
     {
@@ -77,6 +86,9 @@ class MarketplaceController extends Controller
     
     /**
      * Display checkout page for a product.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response|\Illuminate\Http\RedirectResponse
      */
     public function checkout(Request $request)
     {
@@ -106,6 +118,9 @@ class MarketplaceController extends Controller
     
     /**
      * Process the order and create transaction records.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function processOrder(Request $request)
     {
@@ -117,50 +132,115 @@ class MarketplaceController extends Controller
             'payment_method' => 'required|string',
             'notes' => 'nullable|string',
         ]);
+
+        try {
+            return DB::transaction(function () use ($request) {
+                $product = Product::with('shop')->findOrFail($request->product_id);
+
+                // Validasi stok
+                if ($product->stock < $request->quantity) {
+                    return redirect()->back()->with('error', 'Stok produk tidak mencukupi');
+                }
+
+                $farmer = Auth::user()->farmer;
+                $subtotal = $product->price * $request->quantity;
+                $transaction_code = 'TRX-' . strtoupper(Str::random(8));
+
+                // Buat transaksi
+                $transaction = Transaction::create([
+                    'farmer_id' => $farmer->id,
+                    'shop_id' => $product->shop->id,
+                    'transaction_code' => $transaction_code,
+                    'total_amount' => $subtotal,
+                    'status' => 'pending',
+                    'shipping_address' => $request->shipping_address,
+                    'shipping_phone' => $request->shipping_phone,
+                    'notes' => $request->notes,
+                ]);
+
+                // Buat item transaksi
+                TransactionItem::create([
+                    'transaction_id' => $transaction->id,
+                    'product_id' => $product->id,
+                    'quantity' => $request->quantity,
+                    'price' => $product->price,
+                    'subtotal' => $subtotal,
+                ]);
+
+                // Kurangi stok
+                $product->decrement('stock', $request->quantity);
+
+                // Kembalikan data transaksi dalam flash session
+                return redirect()->route('farmer.payment.confirmation', $transaction->id)
+                    ->with('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.')
+                    ->with('transaction', $transaction);
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat memproses pesanan. Silakan coba lagi: ' . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * Menampilkan halaman konfirmasi pembayaran
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
+     */
+    public function paymentConfirmation(Transaction $transaction)
+    {
+        if ($transaction->farmer_id !== Auth::user()->farmer->id) {
+            abort(403, 'Anda tidak memiliki akses ke transaksi ini');
+        }
+
+        $transaction->load(['items.product', 'shop.bankAccount', 'farmer.user']);
+
+        return Inertia::render('Farmer/Marketplace/PaymentConfirmation', [
+            'transaction' => $transaction,
+        ]);
+    }
+
+
+    /**
+     * Memproses konfirmasi pembayaran
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function processPaymentConfirmation(Request $request)
+    {
+        $request->validate([
+            'transaction_id' => 'required|exists:transactions,id',
+            'payment_proof' => 'required|image|max:2048', // Maksimal 2MB
+        ]);
         
-        // Mendapatkan data produk
-        $product = Product::with('shop')
-            ->where('is_active', 1)
-            ->findOrFail($request->product_id);
-            
-        // Validasi stok
-        if ($product->stock < $request->quantity) {
-            return redirect()->back()->with('error', 'Stok produk tidak mencukupi');
+        $transaction = Transaction::findOrFail($request->transaction_id);
+        
+        // Periksa apakah transaksi milik petani yang sedang login
+        if ($transaction->farmer_id !== Auth::user()->farmer->id) {
+            abort(403, 'Anda tidak memiliki akses ke transaksi ini');
         }
         
-        // Mendapatkan data petani yang login
-        $farmer = Auth::user()->farmer;
+        // Periksa apakah status transaksi masih pending
+        if ($transaction->status !== 'pending') {
+            return redirect()->back()->with('error', 'Transaksi ini tidak dapat dikonfirmasi karena status sudah berubah');
+        }
         
-        // Membuat kode transaksi unik
-        $transaction_code = 'TRX-' . Str::upper(Str::random(8));
+        // Upload bukti pembayaran
+        if ($request->hasFile('payment_proof')) {
+            $path = $request->file('payment_proof')->store('payment_proofs', 'public');
+        }
         
-        // Hitung total harga
-        $subtotal = $product->price * $request->quantity;
-        
-        // Buat transaksi baru
-        $transaction = Transaction::create([
-            'farmer_id' => $farmer->id,
-            'shop_id' => $product->shop->id,
-            'transaction_code' => $transaction_code,
-            'total_amount' => $subtotal,
-            'status' => 'pending',
-            'shipping_address' => $request->shipping_address,
-            'shipping_phone' => $request->shipping_phone,
-            'notes' => $request->notes,
+        // Update transaksi
+        $transaction->update([
+            'payment_proof' => $path ?? null,
+            'status' => 'paid', // Ubah status menjadi dibayar
+            'payment_date' => now(),
         ]);
         
-        // Buat item transaksi
-        TransactionItem::create([
-            'transaction_id' => $transaction->id,
-            'product_id' => $product->id,
-            'quantity' => $request->quantity,
-            'price' => $product->price,
-            'subtotal' => $subtotal,
-        ]);
-        
-        // Kurangi stok produk
-        $product->decrement('stock', $request->quantity);
-        
-        return redirect()->route('farmer.activity.index')->with('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran untuk menyelesaikan pesanan.');
+        return redirect()->route('farmer.activity.index')
+            ->with('success', 'Konfirmasi pembayaran berhasil dikirim. Pesanan Anda sedang diproses oleh penjual.');
     }
 }
+

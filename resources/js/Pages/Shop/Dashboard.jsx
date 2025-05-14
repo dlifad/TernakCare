@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import ShopLayout from "@/Layouts/ShopLayout";
 import Card from "@/Components/Shop/Card";
 import Table from "@/Components/Shop/Table";
-import { Head } from "@inertiajs/react";
-import { getTransactionSummary } from "@/Services/transaction";
+import { Head, usePage } from "@inertiajs/react";
 
 const Dashboard = ({ auth }) => {
+    // Mengambil data dashboard dari props Inertia yang dikirim dari controller
+    const { dashboardData } = usePage().props;
+    const [isLoading, setIsLoading] = useState(false);
     const [stats, setStats] = useState({
         totalProducts: 0,
         activeProducts: 0,
@@ -16,23 +18,13 @@ const Dashboard = ({ auth }) => {
         monthlyRevenue: [],
     });
 
-    const [isLoading, setIsLoading] = useState(true);
-
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                // In a real implementation, this would be fetched from the backend
-                const summary = await getTransactionSummary();
-                setStats(summary);
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, []);
+        // Set data dari props ke state lokal
+        if (dashboardData) {
+            setStats(dashboardData);
+        }
+        setIsLoading(false);
+    }, [dashboardData]);
 
     const statCards = [
         {
@@ -48,7 +40,7 @@ const Dashboard = ({ auth }) => {
             color: "bg-success bg-opacity-20",
         },
         {
-            title: "Pesanan Pending",
+            title: "Pesanan Aktif",
             value: stats.pendingTransactions,
             icon: "clock",
             color: "bg-warning bg-opacity-20",
@@ -60,6 +52,40 @@ const Dashboard = ({ auth }) => {
             color: "bg-info bg-opacity-20",
         },
     ];
+
+    // Helper untuk status dalam bahasa Indonesia
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case 'completed':
+            case 'delivered':
+                return 'Delivered';
+            case 'pending':
+                return 'Pending';
+            case 'processing':
+                return 'Processing';
+            case 'shipped':
+                return 'Shipped';
+            default:
+                return 'Dibatalkan';
+        }
+    };
+
+    // Helper untuk status class
+    const getStatusClass = (status) => {
+        switch (status) {
+            case 'completed':
+            case 'delivered':
+                return 'bg-success bg-opacity-20 text-success';
+            case 'pending':
+                return 'bg-warning bg-opacity-20 text-warning';
+            case 'processing':
+                return 'bg-info bg-opacity-20 text-info';
+            case 'shipped':
+                return 'bg-primary bg-opacity-20 text-primary';
+            default:
+                return 'bg-danger bg-opacity-20 text-danger';
+        }
+    };
 
     return (
         <ShopLayout user={auth.user}>
@@ -150,36 +176,16 @@ const Dashboard = ({ auth }) => {
                                                         : tx.main_product,
                                                     `Rp ${tx.total.toLocaleString("id-ID")}`,
                                                     <span
-                                                        className={`px-2 py-1 rounded-full text-xs ${
-                                                            tx.status ===
-                                                            "completed"
-                                                                ? "bg-success bg-opacity-20 text-success"
-                                                                : tx.status ===
-                                                                    "pending"
-                                                                  ? "bg-warning bg-opacity-20 text-warning"
-                                                                  : tx.status ===
-                                                                      "processing"
-                                                                    ? "bg-info bg-opacity-20 text-info"
-                                                                    : "bg-danger bg-opacity-20 text-danger"
-                                                        }`}
+                                                        className={`px-2 py-1 rounded-full text-xs ${getStatusClass(tx.status)}`}
                                                     >
-                                                        {tx.status ===
-                                                        "completed"
-                                                            ? "Selesai"
-                                                            : tx.status ===
-                                                                "pending"
-                                                              ? "Menunggu"
-                                                              : tx.status ===
-                                                                  "processing"
-                                                                ? "Diproses"
-                                                                : "Dibatalkan"}
+                                                        {getStatusLabel(tx.status)}
                                                     </span>,
                                                     new Date(
-                                                        tx.created_at,
+                                                        tx.created_at
                                                     ).toLocaleDateString(
-                                                        "id-ID",
+                                                        "id-ID"
                                                     ),
-                                                ],
+                                                ]
                                             )}
                                         />
                                     ) : (
@@ -232,11 +238,11 @@ const Dashboard = ({ auth }) => {
                                                         <div className="font-semibold text-neutral-dark">
                                                             Rp{" "}
                                                             {product.price.toLocaleString(
-                                                                "id-ID",
+                                                                "id-ID"
                                                             )}
                                                         </div>
                                                     </li>
-                                                ),
+                                                )
                                             )}
                                         </ul>
                                     ) : (
@@ -261,8 +267,8 @@ const Dashboard = ({ auth }) => {
                                                     // Simple bar chart calculation
                                                     const maxRevenue = Math.max(
                                                         ...stats.monthlyRevenue.map(
-                                                            (m) => m.amount,
-                                                        ),
+                                                            (m) => m.amount
+                                                        )
                                                     );
                                                     const height =
                                                         (month.amount /
@@ -285,7 +291,7 @@ const Dashboard = ({ auth }) => {
                                                             </p>
                                                         </div>
                                                     );
-                                                },
+                                                }
                                             )}
                                         </div>
                                     ) : (
