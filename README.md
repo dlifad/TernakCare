@@ -49,3 +49,6 @@
 1. Poto profil beberapa role belum ada / belum sinkron dengan navbar dan sidebar
 2. Hapus gambar pada kelola produk di role toko
 3. ...
+
+## Proses pengerjaan
+1. Transaksi di Role toko
