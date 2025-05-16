@@ -203,35 +203,75 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
 
 });
 
+//Peternak
 Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('farmer.')->group(function () {
     // Dashboard dan Home
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-    // Konsultasi
-    Route::resource('consultations', ConsultationController::class)->except(['create', 'edit']);
-    Route::get('/consultations/{consultation}/chat', [ConsultationController::class, 'chat'])->name('consultations.chat');
-    Route::post('/consultations/{consultation}/chat', [ConsultationController::class, 'sendMessage'])->name('consultations.chat.send');
-    // Tambahkan rute untuk filter konsultasi berdasarkan tipe
-    Route::get('/doctors/{consultationType?}', [ConsultationController::class, 'index'])
-        ->name('consultations.index')
-        ->where('consultationType', 'chat|video|visit');
+    // Konsultasi Routes
+    Route::prefix('consultations')->name('consultations.')->group(function () {
+        // List all consultations with optional type filter
+        Route::get('/', [ConsultationController::class, 'index'])->name('index');
+        Route::get('/doctors/{consultationType?}', [ConsultationController::class, 'index'])
+            ->name('doctors')
+            ->where('consultationType', 'chat|video|visit');
+        
+        // Basic consultation resource routes (except create & edit which use separate forms)
+        Route::get('/{consultation}', [ConsultationController::class, 'show'])->name('show');
+        Route::post('/', [ConsultationController::class, 'store'])->name('store');
+        Route::put('/{consultation}', [ConsultationController::class, 'update'])->name('update');
+        Route::delete('/{consultation}', [ConsultationController::class, 'destroy'])->name('destroy');
+            
+        // Chat functionality
+        Route::get('/{consultation}/chat', [ConsultationController::class, 'chat'])->name('chat');
+        Route::post('/{consultation}/chat', [ConsultationController::class, 'sendMessage'])->name('chat.send');
+        
+        // Video call functionality
+        Route::get('/{consultation}/join-video', [ConsultationController::class, 'joinVideoCall'])->name('join-video');
+            
+        // Payment functionality (this was missing before)
+        Route::get('/{consultation}/payment', [ConsultationController::class, 'payment'])->name('payment');
+        Route::post('/{consultation}/confirm-payment', [ConsultationController::class, 'confirmPayment'])->name('confirm-payment');
+        
+        // Complete consultation
+        Route::post('/{consultation}/complete', [ConsultationController::class, 'complete'])->name('complete');
+            
+        // History
+        Route::get('/history', [ConsultationController::class, 'history'])->name('history');
+        });
 
     // Marketplace
     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
     Route::get('/marketplace/product/{id}', [MarketplaceController::class, 'showProduct'])->name('marketplace.product');
     Route::get('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
-    // Tambahkan baris berikut:
     Route::post('/marketplace/process-order', [MarketplaceController::class, 'processOrder'])->name('marketplace.process-order');
 
-    Route::get('/payment-confirmation/{transaction}', [MarketplaceController::class, 'paymentConfirmation'])->name('payment.confirmation');
+    // Cart Routes
+    Route::get('/cart', [App\Http\Controllers\Farmer\CartController::class, 'index'])->name('cart.index');
+    Route::get('/cart', [App\Http\Controllers\Farmer\CartController::class, 'index'])->name('cart');
+    Route::post('/cart/process-payment', [App\Http\Controllers\Farmer\CartController::class, 'processPayment'])->name('cart.process_payment');
+
+    Route::post('/cart/add', [App\Http\Controllers\Farmer\CartController::class, 'add'])->name('cart.add');
+    Route::put('/cart/{id}', [App\Http\Controllers\Farmer\CartController::class, 'update'])->name('cart.update');
+    Route::delete('/cart/{id}', [App\Http\Controllers\Farmer\CartController::class, 'remove'])->name('cart.remove');
+    Route::delete('/cart', [App\Http\Controllers\Farmer\CartController::class, 'clear'])->name('cart.clear');
+    Route::get('/cart/checkout', [App\Http\Controllers\Farmer\CartController::class, 'checkout'])->name('cart.checkout');
+    Route::post('/cart/checkout/process', [App\Http\Controllers\Farmer\TransactionController::class, 'processCartOrder'])->name('cart.checkout.process');   
+    
+
+
+   // Route::get('/payment-confirmation/{transaction}', [MarketplaceController::class, 'paymentConfirmation'])->name('payment.confirmation');
     Route::post('/process-payment-confirmation', [MarketplaceController::class, 'processPaymentConfirmation'])->name('payment.process');
 
 
-    // Artikel dan Aktivitas
+    // Artikel
     Route::get('/artikel', [App\Http\Controllers\Farmer\ArticleController::class, 'index'])->name('articles');
     Route::get('/artikel/{slug}', [App\Http\Controllers\Farmer\ArticleController::class, 'show'])->name('articles.show');
 
+    // Riwayat Aktivitas
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity');
+    Route::get('/activity/consultation/{id}', [ActivityController::class, 'showConsultation'])->name('activity.consultation.show');
+    Route::get('/activity/transaction/{id}', [ActivityController::class, 'showTransaction'])->name('activity.transaction.show');
 
     // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
@@ -242,6 +282,8 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
 
 Route::post('/farmer/marketplace/payment', [PaymentController::class, 'getSnapToken'])
     ->name('farmer.marketplace.payment');
+Route::post('/payment/callback', [App\Http\Controllers\PaymentController::class, 'handlePaymentCallback'])
+    ->name('payment.callback');
 
 
 

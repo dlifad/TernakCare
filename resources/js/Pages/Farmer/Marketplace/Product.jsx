@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import FarmerLayout from "@/Layouts/FarmerLayout";
 import MarketplaceCard from "@/Components/Farmer/MarketplaceCard";
+import { ShoppingCart } from "lucide-react";
 
 const Product = ({ product, relatedProducts }) => {
     const [quantity, setQuantity] = useState(1);
@@ -43,6 +44,19 @@ const Product = ({ product, relatedProducts }) => {
         if (quantity > 1) {
             setQuantity(quantity - 1);
         }
+    };
+
+    // Fungsi untuk menambahkan ke keranjang
+    const handleAddToCart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        router.post(route("farmer.cart.add"), {
+            product_id: product.id,
+            quantity: 1
+        }, {
+            preserveScroll: true,
+        });
     };
 
     return (
@@ -136,19 +150,33 @@ const Product = ({ product, relatedProducts }) => {
                                     </div>
                                 )}
 
-                                <Link
-                                    href={route("farmer.marketplace.checkout", {
-                                        product_id: product.id,
-                                        quantity: quantity,
-                                    })}
-                                    className={`w-full py-3 px-4 flex justify-center items-center rounded-lg font-medium text-white 
-                                    ${product.stock > 0 
-                                        ? 'bg-primary-dark hover:bg-primary-darker' 
-                                        : 'bg-gray-400 cursor-not-allowed'}`}
-                                    disabled={product.stock <= 0}
-                                >
-                                    {product.stock > 0 ? 'Beli Sekarang' : 'Produk Habis'}
-                                </Link>
+                                {/* Tombol Aksi */}
+                                <div className="flex space-x-4">
+                                    {/* Tombol Beli Sekarang */}
+                                    <Link
+                                        href={route("farmer.marketplace.checkout", {
+                                            product_id: product.id,
+                                            quantity: quantity,
+                                        })}
+                                        className={`flex-1 py-3 px-4 flex justify-center items-center rounded-lg font-medium text-white 
+                                        ${product.stock > 0 
+                                            ? 'bg-primary-dark hover:bg-primary-darker' 
+                                            : 'bg-gray-400 cursor-not-allowed'}`}
+                                        disabled={product.stock <= 0}
+                                    >
+                                        {product.stock > 0 ? 'Beli Sekarang' : 'Produk Habis'}
+                                    </Link>
+
+                                    {/* Tombol Tambah ke Keranjang */}
+                                    {product.stock > 0 && (
+                                        <button
+                                            onClick={handleAddToCart}
+                                            className="py-3 px-4 flex justify-center items-center rounded-lg font-medium text-primary-dark border border-primary-dark hover:bg-primary-light"
+                                        >
+                                            Masukkan Keranjang
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Seller Info */}

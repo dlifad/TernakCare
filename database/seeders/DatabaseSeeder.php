@@ -18,11 +18,6 @@ class DatabaseSeeder extends Seeder
         // Seeder untuk admin
         $this->call(AdminUserSeeder::class);
     
-        // Contoh user tambahan (opsional)
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
     }
     
 }

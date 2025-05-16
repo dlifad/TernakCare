@@ -37,7 +37,7 @@ class Transaction extends Model
     ];
 
     /**
-     * Get the farmer that owns the transaction
+     * Get the farmer that owns the transaction.
      */
     public function farmer()
     {
@@ -45,7 +45,7 @@ class Transaction extends Model
     }
 
     /**
-     * Get the shop for this transaction
+     * Get the shop for this transaction.
      */
     public function shop()
     {
@@ -53,7 +53,7 @@ class Transaction extends Model
     }
 
     /**
-     * Get transaction items
+     * Get transaction items.
      */
     public function items()
     {
@@ -61,10 +61,29 @@ class Transaction extends Model
     }
 
     /**
- * Get the bank account associated with the transaction.
- */
+     * Alias for the items relationship, useful for semantic clarity.
+     */
+    public function transactionItems()
+    {
+        return $this->items();
+    }
+
+    /**
+     * Get the bank account associated with the transaction.
+     */
     public function bankAccount()
     {
         return $this->belongsTo(BankAccount::class);
+    }
+
+
+    /**
+     * Get the shop name associated with this transaction.
+     * This is a convenience accessor using the first transaction item.
+     */
+    public function getShopNameAttribute()
+    {
+        $firstItem = $this->items()->with('product.shop')->first();
+        return $firstItem ? $firstItem->product->shop->name : null;
     }
 }

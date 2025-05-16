@@ -54,4 +54,6 @@ class Shop extends Model
     {
         return $this->hasOne(BankAccount::class);
     }
+
+    
 }

@@ -241,12 +241,12 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                             Panduan Penggunaan
                         </Link>
                         <a
-                        href="https://wa.me/62851"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition duration-300"
+                            href="https://wa.me/62851"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition duration-300"
                         >
-                        Hubungi Kami
+                            Hubungi Kami
                         </a>
                     </div>
                 </div>

@@ -51,5 +51,5 @@
 3. ...
 
 ## Proses pengerjaan
-1. Transaksi di Role toko
-2. Pemnbayaran di role peternak
+1. Transaksi di Role toko // nunggu fix pembayaran
+2. Pemnbayaran di role peternak // belum fix

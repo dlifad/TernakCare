@@ -9,6 +9,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   DashboardController.php
 |   |   |   DoctorController.php
 |   |   |   FarmerController.php
+|   |   |   PaymentController.php
 |   |   |   ProductController.php
 |   |   |   ProfileController.php
 |   |   |   ShopController.php
@@ -38,10 +39,12 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   +---Farmer
 |   |   |       ActivityController.php
 |   |   |       ArticleController.php
+|   |   |       CartController.php
 |   |   |       ConsultationController.php
 |   |   |       HomeController.php
 |   |   |       MarketplaceController.php
 |   |   |       ProfileController.php
+|   |   |       TransactionController.php
 |   |   |       
 |   |   \---Shop
 |   |           DashboardController.php
@@ -68,11 +71,15 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 +---Models
 |       Article.php
 |       BankAccount.php
+|       Cart.php
+|       CartItem.php
+|       Category.php
 |       Chat.php
 |       Consultation.php
 |       Doctor.php
 |       Farmer.php
 |       Product.php
+|       ProductImage.php
 |       Shop.php
 |       Transaction.php
 |       TransactionItem.php
@@ -131,6 +138,10 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |       2025_05_12_125300_add_consultation_services_to_doctors_table.php.php
 |       2025_05_12_171101_create_bank_accounts_table.php
 |       2025_05_13_131048_remove_status_column_from_products_table.php
+|       2025_05_14_052312_add_payment_fields_to_transactions_table.php
+|       2025_05_14_231608_create_carts_table.php
+|       2025_05_15_034029_create_product_images_table.php
+|       2025_05_15_201015_create_categories_table.php
 |       
 \---seeders
         AdminUserSeeder.php
@@ -182,6 +193,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |       NavBar.jsx
 |   |   |       Pagination.jsx
 |   |   |       Sidebar.jsx
+|   |   |       Table.jsx
 |   |   |       
 |   |   +---Doctor
 |   |   |       ConsultationCard.jsx
@@ -190,6 +202,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   +---Farmer
 |   |   |       ActivityHistory.jsx
 |   |   |       ArticleCard.jsx
+|   |   |       CartButton.jsx
 |   |   |       ConsultationRequest.jsx
 |   |   |       MarketplaceCard.jsx
 |   |   |       
@@ -256,7 +269,9 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   |   Home.jsx
 |   |   |   |   
 |   |   |   +---Activity
+|   |   |   |       ConsultationDetail.jsx
 |   |   |   |       Index.jsx
+|   |   |   |       TransactionDetail.jsx
 |   |   |   |       
 |   |   |   +---Article
 |   |   |   |       Detail.jsx
@@ -266,8 +281,11 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   |       Index.jsx
 |   |   |   |       
 |   |   |   +---Marketplace
+|   |   |   |       Cart.jsx
 |   |   |   |       Checkout.jsx
 |   |   |   |       Index.jsx
+|   |   |   |       PaymentPage.jsx
+|   |   |   |       PaymentSuccess.jsx
 |   |   |   |       Product.jsx
 |   |   |   |       
 |   |   |   \---Profile
@@ -288,8 +306,6 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |       |       Index.jsx
 |   |       |       
 |   |       +---ManageProduct
-|   |       |       Create.jsx
-|   |       |       Edit.jsx
 |   |       |       Index.jsx
 |   |       |       
 |   |       +---Profile
@@ -297,6 +313,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |       |       
 |   |       \---Transactions
 |   |               Index.jsx
+|   |               Show.jsx
 |   |               
 |   \---Services
 |           article.js

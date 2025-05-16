@@ -121,59 +121,61 @@ export default function ConsultationRequest({
 
                     {/* Consultation Form */}
                     <form onSubmit={handleSubmit}>
-                        {/* Date and Time Selection */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-neutral-darkest mb-1">
-                                Tanggal & Waktu Konsultasi
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <div className="relative">
-                                        <Calendar
-                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"
-                                            size={16}
-                                        />
-                                        <input
-                                            type="date"
-                                            value={selectedDate}
-                                            onChange={handleDateChange}
-                                            min={
-                                                new Date()
-                                                    .toISOString()
-                                                    .split("T")[0]
-                                            }
-                                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            required
-                                        />
+                        {/* Date and Time Selection - Hanya tampilkan jika bukan chat */}
+                        {consultationType !== "chat" && (
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-neutral-darkest mb-1">
+                                    Tanggal & Waktu Konsultasi
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <div className="relative">
+                                            <Calendar
+                                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"
+                                                size={16}
+                                            />
+                                            <input
+                                                type="date"
+                                                value={selectedDate}
+                                                onChange={handleDateChange}
+                                                min={
+                                                    new Date()
+                                                        .toISOString()
+                                                        .split("T")[0]
+                                                }
+                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                                required
+                                            />
+                                        </div>
+                                        {errors.scheduled_date && (
+                                            <p className="text-danger text-xs mt-1">
+                                                {errors.scheduled_date}
+                                            </p>
+                                        )}
                                     </div>
-                                    {errors.scheduled_date && (
-                                        <p className="text-danger text-xs mt-1">
-                                            {errors.scheduled_date}
-                                        </p>
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="relative">
-                                        <Clock
-                                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"
-                                            size={16}
-                                        />
-                                        <input
-                                            type="time"
-                                            value={selectedTime}
-                                            onChange={handleTimeChange}
-                                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                            required
-                                        />
+                                    <div>
+                                        <div className="relative">
+                                            <Clock
+                                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"
+                                                size={16}
+                                            />
+                                            <input
+                                                type="time"
+                                                value={selectedTime}
+                                                onChange={handleTimeChange}
+                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-light focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                                required
+                                            />
+                                        </div>
+                                        {errors.scheduled_time && (
+                                            <p className="text-danger text-xs mt-1">
+                                                {errors.scheduled_time}
+                                            </p>
+                                        )}
                                     </div>
-                                    {errors.scheduled_time && (
-                                        <p className="text-danger text-xs mt-1">
-                                            {errors.scheduled_time}
-                                        </p>
-                                    )}
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Animal Type */}
                         <div className="mb-4">

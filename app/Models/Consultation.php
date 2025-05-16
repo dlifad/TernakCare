@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Consultation extends Model
 {
-    use HasFactory;
-
     /**
      * The attributes that are mass assignable.
      *
@@ -19,11 +18,17 @@ class Consultation extends Model
         'doctor_id',
         'type',
         'status',
-        'schedule',
+        'animal_type',
+        'issue',
         'description',
         'notes',
+        'schedule',
+        'location',
         'fee',
         'is_paid',
+        'is_completed',
+        'farmer_feedback',
+        'farmer_rating',
     ];
 
     /**
@@ -33,30 +38,30 @@ class Consultation extends Model
      */
     protected $casts = [
         'schedule' => 'datetime',
-        'fee' => 'decimal:2',
         'is_paid' => 'boolean',
+        'is_completed' => 'boolean',
     ];
 
     /**
-     * Get the farmer that owns the consultation
+     * Get the farmer that owns the consultation.
      */
-    public function farmer()
+    public function farmer(): BelongsTo
     {
         return $this->belongsTo(Farmer::class);
     }
 
     /**
-     * Get the doctor for this consultation
+     * Get the doctor that owns the consultation.
      */
-    public function doctor()
+    public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class);
     }
 
     /**
-     * Get consultation chats
+     * Get the chats for the consultation.
      */
-    public function chats()
+    public function chats(): HasMany
     {
         return $this->hasMany(Chat::class);
     }

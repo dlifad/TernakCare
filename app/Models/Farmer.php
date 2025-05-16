@@ -45,4 +45,9 @@ class Farmer extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }

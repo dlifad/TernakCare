@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Farmer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cart;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
@@ -30,7 +31,7 @@ class MarketplaceController extends Controller
         $filters = $request->only(['category', 'search', 'sort']);
 
         $products = Product::query()
-            ->with('shop.user')
+            ->with(['shop.user', 'images'])
             ->where('is_active', 1)
             ->when($filters['category'] ?? null, fn($q, $val) => $val !== 'all' ? $q->where('category', $val) : $q)
             ->when($filters['search'] ?? null, fn($q, $val) => $q->where('name', 'like', "%$val%"))
@@ -50,23 +51,62 @@ class MarketplaceController extends Controller
             ->distinct()
             ->pluck('category');
 
-        return Inertia::render('Farmer/Marketplace/Index', compact('products', 'categories', 'filters'));
+        // Get cart count
+        $cartCount = 0;
+        if (Auth::check() && Auth::user()->farmer) {
+            $cartCount = Cart::where('farmer_id', Auth::user()->farmer->id)->count();
+        }
+
+        return Inertia::render('Farmer/Marketplace/Index', compact('products', 'categories', 'filters', 'cartCount'));
     }
 
     public function showProduct($id)
     {
-        $product = Product::with(['shop.user', 'shop.bankAccount'])
+        $product = Product::with(['shop.user', 'shop.bankAccount', 'images'])
             ->where('is_active', 1)
             ->findOrFail($id);
 
         $relatedProducts = Product::where('category', $product->category)
             ->where('id', '!=', $product->id)
             ->where('is_active', 1)
-            ->with('shop.user')
+            ->with(['shop.user', 'images'])
             ->limit(4)
             ->get();
 
-        return Inertia::render('Farmer/Marketplace/Product', compact('product', 'relatedProducts'));
+        // Check if product is in cart
+        $inCart = false;
+        $cartQuantity = 0;
+        
+        if (Auth::check() && Auth::user()->farmer) {
+            $cartItem = Cart::where('farmer_id', Auth::user()->farmer->id)
+                ->whereHas('items', function ($q) use ($product) {
+                    $q->where('product_id', $product->id);
+                })
+                ->with(['items' => function ($q) use ($product) {
+                    $q->where('product_id', $product->id);
+                }])
+                ->first();
+
+            if ($cartItem && $cartItem->items->isNotEmpty()) {
+                $inCart = true;
+                $cartQuantity = $cartItem->items->first()->quantity;
+            }
+
+        }
+
+        // Get cart count
+        $cartCount = 0;
+        if (Auth::check() && Auth::user()->farmer) {
+            $cartCount = Cart::where('farmer_id', Auth::user()->farmer->id)->count();
+        }
+
+        return Inertia::render('Farmer/Marketplace/Product', compact(
+            'product', 
+            'relatedProducts', 
+            'inCart',
+            'cartQuantity',
+            'cartCount'
+        ));
     }
 
     public function checkout(Request $request)
@@ -76,7 +116,7 @@ class MarketplaceController extends Controller
             'quantity'   => 'required|integer|min:1',
         ]);
 
-        $product = Product::with(['shop.user', 'shop.bankAccount'])
+        $product = Product::with(['shop.user', 'shop.bankAccount', 'images'])
             ->where('is_active', 1)
             ->findOrFail($request->product_id);
 
@@ -164,47 +204,49 @@ class MarketplaceController extends Controller
         }
     }
 
-    public function paymentConfirmation(Transaction $transaction)
-    {
-        if ($transaction->farmer_id !== Auth::user()->farmer->id) {
-            abort(403, 'Akses ditolak');
-        }
-
-        $transaction->load(['items.product', 'shop.bankAccount', 'farmer.user']);
-
-        return Inertia::render('Farmer/Marketplace/PaymentConfirmation', [
-            'transaction' => $transaction,
-            'snapToken'   => session('snap_token'),
-        ]);
-    }
-
-    public function processPaymentConfirmation(Request $request)
+    public function addToCart(Request $request)
     {
         $request->validate([
-            'transaction_id' => 'required|exists:transactions,id',
-            'payment_proof'  => 'required|image|max:2048',
+            'product_id' => 'required|exists:products,id',
+            'quantity'   => 'required|integer|min:1',
         ]);
 
-        $transaction = Transaction::findOrFail($request->transaction_id);
+        $farmer = Auth::user()->farmer;
+        $product = Product::findOrFail($request->product_id);
 
-        if ($transaction->farmer_id !== Auth::user()->farmer->id) {
-            abort(403, 'Anda tidak berhak mengakses transaksi ini');
+        if (!$product->is_active) {
+            return back()->with('error', 'Produk tidak tersedia.');
         }
 
-        if ($transaction->status !== 'pending') {
-            return back()->with('error', 'Transaksi sudah tidak dalam status menunggu');
+        if ($product->stock < $request->quantity) {
+            return back()->with('error', 'Stok produk tidak mencukupi.');
         }
 
-        if ($request->hasFile('payment_proof')) {
-            $path = $request->file('payment_proof')->store('payment_proofs', 'public');
-            $transaction->update([
-                'payment_proof' => $path,
-                'status'        => 'paid',
-                'payment_date'  => now(),
+        // Cari atau buat cart untuk farmer
+        $cart = Cart::firstOrCreate([
+            'farmer_id' => $farmer->id,
+        ]);
+
+        // Cek apakah produk sudah ada di dalam cart
+        $cartItem = $cart->items()->where('product_id', $product->id)->first();
+
+        if ($cartItem) {
+            $newQuantity = $cartItem->quantity + $request->quantity;
+
+            if ($newQuantity > $product->stock) {
+                return back()->with('error', 'Total kuantitas melebihi stok yang tersedia.');
+            }
+
+            $cartItem->update([
+                'quantity' => $newQuantity,
+            ]);
+        } else {
+            $cart->items()->create([
+                'product_id' => $product->id,
+                'quantity'   => $request->quantity,
             ]);
         }
 
-        return redirect()->route('farmer.activity.index')
-            ->with('success', 'Pembayaran berhasil dikonfirmasi.');
+        return back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
 }

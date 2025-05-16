@@ -4,6 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ProductImage;
+use App\Models\Shop;
+use App\Models\TransactionItem;
+
+
 
 class Product extends Model
 {
@@ -51,5 +56,10 @@ class Product extends Model
     public function transactionItems()
     {
         return $this->hasMany(TransactionItem::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
     }
 }
