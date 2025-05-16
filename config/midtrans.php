@@ -6,5 +6,6 @@ return [
     'merchant_id' => env('MIDTRANS_MERCHANT_ID', ''),
     '3ds' => true,
     'sanitized' => true,
+    'timezone' => 'Asia/Jakarta',
 ];
 

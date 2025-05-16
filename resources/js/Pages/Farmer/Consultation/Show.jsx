@@ -49,22 +49,25 @@ const ConsultationShow = ({ consultation, auth }) => {
   };
 
   // Render tombol sesuai status pembayaran
-  const ActionButton = () => {
+    const ActionButton = () => {
     // Jika status konsultasi bukan approved, tombol tidak perlu ditampilkan
     if (consultation.status !== 'approved') {
-      return null;
+        return null;
     }
 
     if (!consultation.is_paid) {
-      return (
+        // SOLUSI: Gunakan Link dengan benar, tanpa method="get" 
+        return (
         <Link 
-          href={route('farmer.consultations.payment', consultation.id)} 
-          className="flex items-center justify-center w-full px-4 py-2 mt-6 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            href={route('farmer.consultations.payment', consultation.id)} 
+            className="flex items-center justify-center w-full px-4 py-2 mt-6 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            // Hapus method="get" karena Link sudah menggunakan GET secara default
+            // as="button" juga tidak diperlukan untuk navigasi normal
         >
-          <CreditCard className="w-5 h-5 mr-2" />
-          Bayar Sekarang
+            <CreditCard className="w-5 h-5 mr-2" />
+            Bayar Sekarang
         </Link>
-      );
+        );
     } else {
       // Tombol hanya ditampilkan untuk konsultasi chat
       if (consultation.type === 'chat') {

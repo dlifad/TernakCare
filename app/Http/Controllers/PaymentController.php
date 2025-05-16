@@ -14,11 +14,16 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Midtrans\Notification;
+use App\Services\MidtransService;
 
 class PaymentController extends Controller
 {
-    public function __construct()
+    protected $midtransService;
+
+    public function __construct(MidtransService $midtransService)
     {
+        $this->midtransService = $midtransService;
+        
         // Set konfigurasi Midtrans
         Config::$serverKey = config('midtrans.server_key');
         Config::$isProduction = config('midtrans.is_production', false);
@@ -131,6 +136,99 @@ class PaymentController extends Controller
         }
     }
     
+    /**
+     * Handle payment notification from Midtrans
+     */
+    public function handlePaymentNotification(Request $request)
+    {
+        try {
+            $notification = $request->all();
+            // Log notifikasi untuk debugging
+            Log::info('Midtrans notification received', $notification);
+
+            // Jika order_id dimulai dengan 'CONS-', maka ini adalah pembayaran konsultasi
+            if (isset($notification['order_id']) && strpos($notification['order_id'], 'CONS-') === 0) {
+                $this->midtransService->handleConsultationPaymentNotification($notification);
+            } else {
+                // Proses untuk transaksi marketplace (TRX-)
+                $this->handleMarketplacePaymentNotification($notification);
+            }
+
+            return response('OK', 200);
+        } catch (\Exception $e) {
+            Log::error('Error handling Midtrans notification: ' . $e->getMessage());
+            return response('Error', 500);
+        }
+    }
+
+    /**
+     * Handle marketplace payment notification
+     */
+    private function handleMarketplacePaymentNotification($notification)
+    {
+        // Konversi notifikasi ke objek Notification jika diperlukan
+        $orderId = $notification['order_id'] ?? null;
+        $transactionStatus = $notification['transaction_status'] ?? null;
+        $fraudStatus = $notification['fraud_status'] ?? null;
+        
+        Log::info('Marketplace Payment Callback', [
+            'order_id' => $orderId,
+            'status' => $transactionStatus,
+            'fraud' => $fraudStatus
+        ]);
+        
+        // Cari transaksi berdasarkan order ID
+        $transaction = Transaction::where('transaction_code', $orderId)->first();
+        
+        if (!$transaction) {
+            Log::error('Transaction not found: ' . $orderId);
+            return;
+        }
+        
+        // Update status transaksi berdasarkan status dari Midtrans
+        if ($transactionStatus == 'capture') {
+            if ($fraudStatus == 'challenge') {
+                // Transaksi diragukan, tetap pending
+                $transaction->update(['status' => 'pending']);
+            } else if ($fraudStatus == 'accept') {
+                // Transaksi berhasil
+                $transaction->update([
+                    'status' => 'paid',
+                    'payment_date' => now(),
+                ]);
+            }
+        } else if ($transactionStatus == 'settlement') {
+            // Transaksi berhasil
+            $transaction->update([
+                'status' => 'paid',
+                'payment_date' => now(),
+            ]);
+        } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
+            // Transaksi batal, ditolak, atau kadaluarsa
+            $transaction->update([
+                'status' => 'cancelled',
+            ]);
+            
+            // Kembalikan stok produk
+            $transaction->load('items');
+            foreach ($transaction->items as $item) {
+                $product = Product::find($item->product_id);
+                if ($product) {
+                    $product->increment('stock', $item->quantity);
+                }
+            }
+        } else if ($transactionStatus == 'pending') {
+            // Transaksi masih pending
+            $transaction->update([
+                'status' => 'pending',
+            ]);
+        }
+    }
+    
+    /**
+     * Legacy method for backward compatibility
+     * This will be deprecated, use handlePaymentNotification instead
+     */
     public function handlePaymentCallback(Request $request)
     {
         try {
@@ -146,7 +244,7 @@ class PaymentController extends Controller
             $fraudStatus = $notification->fraud_status;
             $orderId = $notification->order_id;
             
-            Log::info('Midtrans Callback', [
+            Log::info('Midtrans Callback (Legacy)', [
                 'order_id' => $orderId,
                 'status' => $transactionStatus,
                 'fraud' => $fraudStatus

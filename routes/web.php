@@ -229,16 +229,16 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
         // Video call functionality
         Route::get('/{consultation}/join-video', [ConsultationController::class, 'joinVideoCall'])->name('join-video');
             
-        // Payment functionality (this was missing before)
+        // Payment functionality (updated for Midtrans)
         Route::get('/{consultation}/payment', [ConsultationController::class, 'payment'])->name('payment');
-        Route::post('/{consultation}/confirm-payment', [ConsultationController::class, 'confirmPayment'])->name('confirm-payment');
+        Route::get('/{consultation}/payment-finish', [ConsultationController::class, 'paymentFinish'])->name('payment.finish');
         
         // Complete consultation
         Route::post('/{consultation}/complete', [ConsultationController::class, 'complete'])->name('complete');
             
         // History
         Route::get('/history', [ConsultationController::class, 'history'])->name('history');
-        });
+    });
 
     // Marketplace
     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
@@ -284,6 +284,8 @@ Route::post('/farmer/marketplace/payment', [PaymentController::class, 'getSnapTo
     ->name('farmer.marketplace.payment');
 Route::post('/payment/callback', [App\Http\Controllers\PaymentController::class, 'handlePaymentCallback'])
     ->name('payment.callback');
+Route::post('/payment/midtrans/notification', [App\Http\Controllers\PaymentController::class, 'handlePaymentNotification'])
+    ->name('payment.midtrans.notification');
 
 
 

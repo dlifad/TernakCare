@@ -2,17 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Consultation extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    use HasFactory;
+
     protected $fillable = [
         'farmer_id',
         'doctor_id',
@@ -20,48 +16,46 @@ class Consultation extends Model
         'status',
         'animal_type',
         'issue',
-        'description',
-        'notes',
         'schedule',
         'location',
+        'description',
+        'notes',
         'fee',
         'is_paid',
         'is_completed',
-        'farmer_feedback',
-        'farmer_rating',
+        'midtrans_order_id',
+        'midtrans_snap_token',
+        'payment_status',
+        'payment_details',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
         'schedule' => 'datetime',
         'is_paid' => 'boolean',
         'is_completed' => 'boolean',
+        'payment_details' => 'array',
     ];
 
     /**
-     * Get the farmer that owns the consultation.
+     * Mendapatkan peternak yang melakukan konsultasi
      */
-    public function farmer(): BelongsTo
+    public function farmer()
     {
         return $this->belongsTo(Farmer::class);
     }
 
     /**
-     * Get the doctor that owns the consultation.
+     * Mendapatkan dokter yang melakukan konsultasi
      */
-    public function doctor(): BelongsTo
+    public function doctor()
     {
         return $this->belongsTo(Doctor::class);
     }
 
     /**
-     * Get the chats for the consultation.
+     * Mendapatkan chat dalam konsultasi
      */
-    public function chats(): HasMany
+    public function chats()
     {
         return $this->hasMany(Chat::class);
     }

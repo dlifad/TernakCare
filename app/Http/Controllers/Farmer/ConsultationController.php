@@ -9,6 +9,7 @@ use App\Models\Chat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Services\MidtransService;
 
 class ConsultationController extends Controller
 {
@@ -184,6 +185,99 @@ class ConsultationController extends Controller
     }
 
 
+    protected $midtransService;
+
+    public function __construct(MidtransService $midtransService)
+    {
+        $this->midtransService = $midtransService;
+    }
+
+    /**
+     * Process payment for consultation
+     */
+    public function payment($id)
+    {
+        $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
+            ->with('doctor.user')
+            ->findOrFail($id);
+
+        // Validasi status konsultasi
+        if ($consultation->status !== 'approved') {
+            return back()->with('error', 'Konsultasi belum disetujui oleh dokter.');
+        }
+
+        // Validasi jika sudah dibayar
+        if ($consultation->is_paid) {
+            return back()->with('error', 'Konsultasi ini sudah dibayar.');
+        }
+
+        // Membuat snap token jika belum ada
+        if (!$consultation->midtrans_snap_token) {
+            $snapToken = $this->midtransService->createConsultationSnapToken($consultation);
+            
+            if (!$snapToken) {
+                dd('GAGAL BUAT SNAP TOKEN');
+                return back()->with('error', 'Gagal membuat token pembayaran. Silakan coba lagi nanti.');
+            }
+        }
+
+        // Refresh untuk mendapatkan data terbaru
+        $consultation->refresh();
+
+        // SOLUSI: Pastikan data yang dikirim ke view Payment sesuai dengan yang diharapkan
+        return Inertia::render('Farmer/Consultation/Payment', [
+            'consultation' => [
+                'id' => $consultation->id,
+                'doctor' => [
+                    'name' => $consultation->doctor->user->name
+                ],
+                'type' => $consultation->type,
+                'fee' => $consultation->fee,
+                'snapToken' => $consultation->midtrans_snap_token,
+            ],
+            'clientKey' => config('midtrans.client_key'), // ✅ pindahkan ke sini
+        ]);
+
+    }
+
+    /**
+     * Process payment notification from Midtrans
+     */
+    public function handlePaymentNotification(Request $request)
+    {
+        $notification = $request->all();
+        
+        $this->midtransService->handleConsultationPaymentNotification($notification);
+        
+        return response('OK', 200);
+    }
+
+    /**
+     * Process payment confirmation from redirect URL
+     */
+    public function paymentFinish(Request $request, $id)
+    {
+        $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
+            ->findOrFail($id);
+
+        // Refresh data dari database
+        $consultation->refresh();
+
+        // Redirect kembali ke halaman detail konsultasi
+        if ($consultation->is_paid) {
+            return redirect()->route('farmer.consultations.show', $consultation->id)
+                ->with('message', 'Pembayaran berhasil dikonfirmasi.');
+        } else {
+            return redirect()->route('farmer.consultations.show', $consultation->id)
+                ->with('info', 'Status pembayaran: ' . ($consultation->payment_status ?? 'pending'));
+        }
+    }
+
+
+
+
+
+
     /**
      * Request a new chat consultation.
      */
@@ -307,70 +401,42 @@ class ConsultationController extends Controller
         ]);
     }
 
-    /**
-     * Process payment for consultation
-     */
-    public function payment($id)
-    {
-        $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
-            ->findOrFail($id);
 
-        // Validasi status konsultasi
-        if ($consultation->status !== 'approved') {
-            return back()->with('error', 'Konsultasi belum disetujui oleh dokter.');
-        }
-
-        // Validasi jika sudah dibayar
-        if ($consultation->is_paid) {
-            return back()->with('error', 'Konsultasi ini sudah dibayar.');
-        }
-
-        return Inertia::render('Farmer/Consultation/Payment', [
-            'consultation' => [
-                'id' => $consultation->id,
-                'doctor' => [
-                    'name' => $consultation->doctor->user->name
-                ],
-                'type' => $consultation->type,
-                'fee' => $consultation->fee
-            ]
-        ]);
-    }
 
     /**
      * Process payment confirmation
      */
-    public function confirmPayment(Request $request, $id)
-    {
-        $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
-            ->findOrFail($id);
+    // public function confirmPayment(Request $request, $id)
+    // {
+    //     $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
+    //         ->findOrFail($id);
 
-        // Validasi status konsultasi
-        if ($consultation->status !== 'approved') {
-            return back()->with('error', 'Konsultasi belum disetujui oleh dokter.');
-        }
+    //     // Validasi status konsultasi
+    //     if ($consultation->status !== 'approved') {
+    //         return back()->with('error', 'Konsultasi belum disetujui oleh dokter.');
+    //     }
 
-        // Validasi jika sudah dibayar
-        if ($consultation->is_paid) {
-            return back()->with('error', 'Konsultasi ini sudah dibayar.');
-        }
+    //     // Validasi jika sudah dibayar
+    //     if ($consultation->is_paid) {
+    //         return back()->with('error', 'Konsultasi ini sudah dibayar.');
+    //     }
 
-        // Di sini seharusnya ada proses pembayaran dengan payment gateway
-        // Untuk sementara, kita anggap pembayaran berhasil
+    //     // Di sini seharusnya ada proses pembayaran dengan payment gateway
+    //     // Untuk sementara, kita anggap pembayaran berhasil
 
-        // Update status pembayaran
-        $consultation->is_paid = 1;
+    //     // Update status pembayaran
+    //     $consultation->is_paid = 1;
 
-        // Untuk konsultasi chat, langsung set status menjadi active
-        if ($consultation->type === 'chat') {
-            $consultation->status = 'active';
-        }
+    //     // Untuk konsultasi chat, langsung set status menjadi active
+    //     if ($consultation->type === 'chat') {
+    //         $consultation->status = 'active';
+    //     }
 
-        $consultation->save();
+    //     $consultation->save();
 
-        return redirect()->route('farmer.consultations.show', $consultation->id)
-            ->with('message', 'Pembayaran berhasil dikonfirmasi.');
-    }
+    //     return redirect()->route('farmer.consultations.show', $consultation->id)
+    //         ->with('message', 'Pembayaran berhasil dikonfirmasi.');
+    // }
 
     /**
      * Open chat interface
