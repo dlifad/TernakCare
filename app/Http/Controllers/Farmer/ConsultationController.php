@@ -12,91 +12,82 @@ use Inertia\Inertia;
 
 class ConsultationController extends Controller
 {
-    /**
-     * Display the list of available doctors for consultation.
-     */
     public function index(Request $request)
     {
-        // Tangkap parameter tipe konsultasi (default: chat)
-        $consultationType = $request->input('type', 'chat');
-        
-        // Validasi tipe konsultasi
-        if (!in_array($consultationType, ['chat', 'video', 'visit'])) {
-            $consultationType = 'chat';
+        $frontendType = $request->input('type', 'chat');
+
+        // Validasi tipe frontend
+        $allowedTypes = ['chat', 'video_call', 'visit'];
+        if (!in_array($frontendType, $allowedTypes)) {
+            $frontendType = 'chat';
         }
-        
-        // Ambil dokter yang aktif berdasarkan tipe konsultasi yang dipilih
-        $doctors = Doctor::whereHas('user', function ($query) {
-            $query->where('is_active', true);
-            // Hapus kondisi status karena tidak terlihat di gambar database
-            // $query->where('status', 'active');
-        })
-        ->where(function($query) use ($consultationType) {
-            // Sesuaikan dengan nama kolom yang terlihat di database
-            if ($consultationType === 'chat') {
-                $query->where('chat_service_active', true);
-                // Gunakan is_available_online jika untuk chat
-                $query->where('is_available_online', true);
-            } elseif ($consultationType === 'video') {
-                $query->where('video_call_service_active', true);
-                // Gunakan is_available_online jika untuk video call
-                $query->where('is_available_online', true);
-            } elseif ($consultationType === 'visit') {
-                $query->where('home_visit_service_active', true);
-                // Untuk kunjungan, cek apakah ada jam kerja yang tersedia
-                $query->where('is_available_online', true);
-            }
-        })
-        ->with(['user' => function($query) {
-            $query->select('id', 'name', 'email');
-        }])
-        ->get()
-        ->map(function($doctor) {
-            // Format data untuk frontend sesuai dengan kolom di database
-            return [
-                'id' => $doctor->id,
-                'name' => $doctor->user->name,
-                'profile_photo_url' => $doctor->user->photo_url
-                    ? asset('storage/' . $doctor->user->photo_url)
-                    : asset('storage/images/default-avatar.png'),
 
-                'experience' => $doctor->years_experience,
-                'rating' => 5.0, // Nilai default karena tidak ada di tabel
-                'chat_fee' => $doctor->chat_service_fee ?? 0,
-                'video_fee' => $doctor->video_call_service_fee ?? 0,
-                'visit_fee' => $doctor->home_visit_service_fee ?? 0,
-            ];
-        });
+        // Query dokter sesuai tipe layanan
+        $doctors = Doctor::whereHas(
+            'user',
+            fn($q) =>
+            $q->where('is_active', true)
+        )
+            ->where(fn($query) => match ($frontendType) {
+                'chat' => $query->where('chat_service_active', true)
+                    ->where('is_available_online', true),
+                'video_call' => $query->where('video_call_service_active', true)
+                    ->where('is_available_online', true),
+                'visit' => $query->where('home_visit_service_active', true)
+                    ->where('is_available_online', true),
+            })
+            ->with(['user:id,name,email,photo_url']) // pastikan `photo_url` dimuat
+            ->get()
+            ->map(function ($doctor) use ($frontendType) {
+                // $fee = match ($frontendType) {
+                //     'chat' => $doctor->chat_service_fee,
+                //     'video_call' => $doctor->video_call_service_fee,
+                //     'visit' => $doctor->home_visit_service_fee,
+                //     default => 0,
+                // };
 
-        // Ambil konsultasi yang akan datang untuk ditampilkan
+                return [
+                    'id' => $doctor->id,
+                    'name' => $doctor->user->name,
+                    'profile_photo_url' => $doctor->user->photo_url
+                        ? asset('storage/' . $doctor->user->photo_url)
+                        : asset('storage/images/default-avatar.png'),
+                    'experience' => $doctor->years_experience,
+                    'rating' => 5.0,
+                    'chat_fee' => $doctor->chat_service_fee ?? 0,
+                    'video_call_fee' => $doctor->video_call_service_fee ?? 0,
+                    'visit_fee' => $doctor->home_visit_service_fee ?? 0,
+                ];
+            });
+
+        // Konsultasi mendatang
         $upcomingConsultations = Consultation::where('farmer_id', Auth::user()->farmer->id)
             ->whereIn('status', ['approved', 'active'])
-            ->where(function($query) {
-                $query->where('type', 'chat') // Tambahkan kondisi untuk chat
-                    ->orWhere(function($subquery) {
-                        $subquery->whereIn('type', ['video', 'visit'])
-                                ->where(function($dateQuery) {
-                                    $dateQuery->whereNull('schedule')
-                                            ->orWhere('schedule', '>=', now());
-                                });
+            ->where(function ($query) {
+                $query->where('type', 'chat')
+                    ->orWhere(function ($subquery) {
+                        $subquery->whereIn('type', ['video_call', 'visit'])
+                            ->where(function ($q) {
+                                $q->whereNull('schedule')
+                                    ->orWhere('schedule', '>=', now());
+                            });
                     });
             })
-            ->with(['doctor.user' => function($query) {
-                $query->select('id', 'name', 'photo_url'); // atau 'photo_path' tergantung yang Anda pakai
-            }])
+            ->with(['doctor.user:id,name,photo_url'])
             ->select('id', 'doctor_id', 'type', 'status', 'schedule')
             ->orderBy('schedule')
             ->take(5)
             ->get()
-            ->map(function($consultation) {
+            ->map(function ($consultation) {
+                $user = $consultation->doctor->user;
                 return [
                     'id' => $consultation->id,
                     'doctor' => [
                         'id' => $consultation->doctor->id,
-                        'name' => $consultation->doctor->user->name,
-                        'profile_photo_url' => $consultation->doctor->user->profile_photo ? 
-                            asset('storage/' . $consultation->doctor->user->profile_photo) : 
-                            asset('storage/images/default-avatar.png'),
+                        'name' => $user->name,
+                        'profile_photo_url' => $user->photo_url
+                            ? asset('storage/' . $user->photo_url)
+                            : asset('storage/images/default-avatar.png'),
                     ],
                     'type' => $consultation->type,
                     'status' => $consultation->status,
@@ -107,9 +98,10 @@ class ConsultationController extends Controller
         return Inertia::render('Farmer/Consultation/Index', [
             'doctors' => $doctors,
             'upcomingConsultations' => $upcomingConsultations,
-            'consultationType' => $consultationType,
+            'consultationType' => $frontendType,
         ]);
     }
+
 
     /**
      * Display the doctor's profile and consultation options.
@@ -117,7 +109,7 @@ class ConsultationController extends Controller
     public function showDoctor($id)
     {
         $doctor = Doctor::with('user')->findOrFail($id);
-        
+
         return Inertia::render('Farmer/Consultation/Doctor', [
             'doctor' => $doctor,
         ]);
@@ -128,77 +120,69 @@ class ConsultationController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input
+        // Validasi tipe sesuai database
         $validationRules = [
             'doctor_id' => 'required|exists:doctors,id',
-            'type' => 'required|in:chat,video,visit',
+            'type' => 'required|in:chat,video_call,visit',
             'animal_type' => 'required|string|max:100',
             'symptoms' => 'required|string|max:500',
             'description' => 'nullable|string|max:1000',
         ];
-        
-        // Tambahkan validasi jadwal hanya untuk video dan visit
+
         if ($request->type != 'chat') {
             $validationRules['scheduled_date'] = 'required|date|after_or_equal:today';
             $validationRules['scheduled_time'] = 'required';
         }
-        
-        // Tambahkan validasi alamat hanya untuk visit
+
         if ($request->type == 'visit') {
             $validationRules['address'] = 'required|string|max:255';
         }
-        
+
         $request->validate($validationRules);
 
-        // Gabungkan tanggal dan waktu hanya jika bukan tipe chat
         $scheduledDateTime = null;
         if ($request->type != 'chat' && $request->scheduled_date && $request->scheduled_time) {
             $scheduledDateTime = $request->scheduled_date . ' ' . $request->scheduled_time . ':00';
         }
 
-        // Ambil data dokter untuk mendapatkan biaya konsultasi
         $doctor = Doctor::findOrFail($request->doctor_id);
-        
-        // Tentukan fee berdasarkan tipe konsultasi
+
+        // Tentukan fee sesuai tipe
         $fee = 0;
         if ($request->type === 'chat') {
             $fee = $doctor->chat_service_fee;
-        } elseif ($request->type === 'video') {
+        } elseif ($request->type === 'video_call') {
             $fee = $doctor->video_call_service_fee;
         } elseif ($request->type === 'visit') {
             $fee = $doctor->home_visit_service_fee;
         }
 
-        // Buat array data untuk membuat konsultasi baru
         $consultationData = [
             'farmer_id' => Auth::user()->farmer->id,
             'doctor_id' => $request->doctor_id,
-            'type' => $request->type,
+            'type' => $request->type, // langsung simpan tanpa map
             'status' => 'pending',
-            'issue' => $request->symptoms, // Gunakan symptoms sebagai issue
+            'issue' => $request->symptoms,
             'animal_type' => $request->animal_type,
             'description' => $request->description ?? null,
             'fee' => $fee,
             'is_paid' => 0,
         ];
-        
-        // Tambahkan schedule hanya jika bukan tipe chat
+
         if ($request->type != 'chat') {
             $consultationData['schedule'] = $scheduledDateTime;
         }
-        
-        // Tambahkan lokasi hanya jika tipe visit
+
         if ($request->type == 'visit') {
             $consultationData['location'] = $request->address;
         }
-        
-        // Buat konsultasi baru menggunakan Eloquent ORM
+
         $consultation = Consultation::create($consultationData);
 
-        // Redirect menggunakan Inertia dengan pesan sukses
         return redirect()->route('farmer.consultations.show', $consultation->id)
             ->with('message', 'Permintaan konsultasi berhasil dikirim.');
     }
+
 
     /**
      * Request a new chat consultation.
@@ -296,8 +280,8 @@ class ConsultationController extends Controller
                     'id' => $consultation->doctor->id,
                     'user' => [
                         'name' => $consultation->doctor->user->name,
-                        'profile_photo_url' => $consultation->doctor->user->photo_url ? 
-                            asset('storage/' . $consultation->doctor->user->photo_url) : 
+                        'profile_photo_url' => $consultation->doctor->user->photo_url ?
+                            asset('storage/' . $consultation->doctor->user->photo_url) :
                             asset('storage/images/default-avatar.png'),
                     ]
                 ],
@@ -311,7 +295,7 @@ class ConsultationController extends Controller
                 'location' => $consultation->location,
                 'created_at' => $consultation->created_at,
                 'is_paid' => (bool) $consultation->is_paid, // Konversi integer ke boolean untuk frontend
-                'chats' => $consultation->chats->map(function($chat) {
+                'chats' => $consultation->chats->map(function ($chat) {
                     return [
                         'id' => $chat->id,
                         'sender_type' => $chat->sender_type,
@@ -330,17 +314,17 @@ class ConsultationController extends Controller
     {
         $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
             ->findOrFail($id);
-        
+
         // Validasi status konsultasi
         if ($consultation->status !== 'approved') {
             return back()->with('error', 'Konsultasi belum disetujui oleh dokter.');
         }
-        
+
         // Validasi jika sudah dibayar
         if ($consultation->is_paid) {
             return back()->with('error', 'Konsultasi ini sudah dibayar.');
         }
-        
+
         return Inertia::render('Farmer/Consultation/Payment', [
             'consultation' => [
                 'id' => $consultation->id,
@@ -360,30 +344,30 @@ class ConsultationController extends Controller
     {
         $consultation = Consultation::where('farmer_id', Auth::user()->farmer->id)
             ->findOrFail($id);
-        
+
         // Validasi status konsultasi
         if ($consultation->status !== 'approved') {
             return back()->with('error', 'Konsultasi belum disetujui oleh dokter.');
         }
-        
+
         // Validasi jika sudah dibayar
         if ($consultation->is_paid) {
             return back()->with('error', 'Konsultasi ini sudah dibayar.');
         }
-        
+
         // Di sini seharusnya ada proses pembayaran dengan payment gateway
         // Untuk sementara, kita anggap pembayaran berhasil
-        
+
         // Update status pembayaran
         $consultation->is_paid = 1;
-        
+
         // Untuk konsultasi chat, langsung set status menjadi active
         if ($consultation->type === 'chat') {
             $consultation->status = 'active';
         }
-        
+
         $consultation->save();
-        
+
         return redirect()->route('farmer.consultations.show', $consultation->id)
             ->with('message', 'Pembayaran berhasil dikonfirmasi.');
     }
@@ -397,30 +381,30 @@ class ConsultationController extends Controller
             ->where('farmer_id', Auth::user()->farmer->id)
             ->where('type', 'chat')
             ->findOrFail($id);
-        
+
         // Validasi status konsultasi
         if ($consultation->status !== 'active') {
             return back()->with('error', 'Konsultasi belum aktif.');
         }
-        
+
         // Validasi status pembayaran
         if (!$consultation->is_paid) {
             return back()->with('error', 'Konsultasi belum dibayar.');
         }
-        
+
         return Inertia::render('Farmer/Consultation/Chat', [
             'consultation' => [
                 'id' => $consultation->id,
                 'doctor' => [
                     'id' => $consultation->doctor->id,
                     'name' => $consultation->doctor->user->name,
-                    'profile_photo_url' => $consultation->doctor->user->photo_url ? 
-                        asset('storage/' . $consultation->doctor->user->photo_url) : 
+                    'profile_photo_url' => $consultation->doctor->user->photo_url ?
+                        asset('storage/' . $consultation->doctor->user->photo_url) :
                         asset('storage/images/default-avatar.png'),
                 ],
                 'issue' => $consultation->issue,
                 'animal_type' => $consultation->animal_type,
-                'chats' => $consultation->chats->map(function($chat) {
+                'chats' => $consultation->chats->map(function ($chat) {
                     return [
                         'id' => $chat->id,
                         'sender_type' => $chat->sender_type,
@@ -471,7 +455,7 @@ class ConsultationController extends Controller
         if ($consultation->status !== 'active') {
             return back()->with('error', 'This video call is not currently active.');
         }
-        
+
         // Validasi status pembayaran
         if (!$consultation->is_paid) {
             return back()->with('error', 'Consultation fee has not been paid.');

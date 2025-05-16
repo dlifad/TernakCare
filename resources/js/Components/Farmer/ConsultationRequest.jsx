@@ -7,12 +7,23 @@ export default function ConsultationRequest({
     consultationType,
     onClose,
 }) {
+    console.log("Doctor data:", doctor);
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("");
 
+    // Map the frontend types to backend types
+    const getBackendConsultationType = (frontendType) => {
+        const typeMap = {
+            chat: "chat",
+            video_call: "video_call",
+            visit: "visit",
+        };
+        return typeMap[frontendType] || "chat";
+    };
+
     const { data, setData, post, processing, errors } = useForm({
         doctor_id: doctor.id,
-        type: consultationType,
+        type: getBackendConsultationType(consultationType),
         description: "",
         scheduled_date: "",
         scheduled_time: "",
@@ -44,7 +55,7 @@ export default function ConsultationRequest({
         switch (consultationType) {
             case "chat":
                 return <MessageSquare className="h-5 w-5 text-info" />;
-            case "video":
+            case "video_call":
                 return <Video className="h-5 w-5 text-primary" />;
             case "visit":
                 return <Map className="h-5 w-5 text-secondary" />;
@@ -57,7 +68,7 @@ export default function ConsultationRequest({
         switch (consultationType) {
             case "chat":
                 return "Chat";
-            case "video":
+            case "video_call":
                 return "Video Call";
             case "visit":
                 return "Kunjungan";
