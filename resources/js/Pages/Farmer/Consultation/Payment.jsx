@@ -3,12 +3,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import FarmerLayout from '@/Layouts/FarmerLayout';
 import { ArrowLeft, CreditCard } from 'lucide-react';
 
-const Payment = ({ consultation, auth }) => {
+const Payment = ({ consultation, auth, clientKey }) => {
   useEffect(() => {
     // Load Midtrans script
     const midtransScriptUrl = 'https://app.sandbox.midtrans.com/snap/snap.js';
-    const clientKey = consultation.clientKey;
-
+    
     const script = document.createElement('script');
     script.src = midtransScriptUrl;
     script.setAttribute('data-client-key', clientKey);
@@ -19,7 +18,7 @@ const Payment = ({ consultation, auth }) => {
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+  }, [clientKey]);
 
   const handlePayButtonClick = () => {
     // Memeriksa apakah snap sudah dimuat
@@ -32,7 +31,10 @@ const Payment = ({ consultation, auth }) => {
             payment_data: result
           }, {
             onSuccess: () => {
-              window.location.href = route('farmer.consultations.payment.finish', consultation.id);
+              // Tambahkan timeout lebih lama untuk memastikan data tersimpan sebelum redirect
+              setTimeout(() => {
+                window.location.href = route('farmer.consultations.payment.finish', consultation.id);
+              }, 3000); // Ubah dari 1000ms menjadi 3000ms
             }
           });
         },

@@ -65,7 +65,7 @@ const ConsultationShow = ({ consultation, auth }) => {
             // as="button" juga tidak diperlukan untuk navigasi normal
         >
             <CreditCard className="w-5 h-5 mr-2" />
-            Bayar Sekarang
+            Bayar
         </Link>
         );
     } else {
@@ -108,7 +108,7 @@ const ConsultationShow = ({ consultation, auth }) => {
           <div className="mb-6">
             <Link 
               href={route('farmer.consultations.index')}
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center text-primary hover:text-primary-dark"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Kembali ke Daftar Konsultasi

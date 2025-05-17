@@ -231,6 +231,7 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
             
         // Payment functionality (updated for Midtrans)
         Route::get('/{consultation}/payment', [ConsultationController::class, 'payment'])->name('payment');
+        Route::post('/{consultation}/payment/update', [ConsultationController::class, 'updatePayment'])->name('payment.update');
         Route::get('/{consultation}/payment-finish', [ConsultationController::class, 'paymentFinish'])->name('payment.finish');
         
         // Complete consultation

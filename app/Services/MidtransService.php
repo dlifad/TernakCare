@@ -5,6 +5,7 @@ namespace App\Services;
 use Midtrans\Config;
 use Midtrans\Snap;
 use App\Models\Consultation;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class MidtransService
@@ -27,54 +28,49 @@ class MidtransService
      * @param Consultation $consultation
      * @return string
      */
+    // Verifikasi kode ini sudah ada di MidtransService.php dan berfungsi dengan benar
     public function createConsultationSnapToken(Consultation $consultation)
     {
+        // Buat order ID unik
         $orderId = 'CONS-' . $consultation->id . '-' . time();
-
-        // Menyiapkan item detail
-        $itemDetails = [
-            [
-                'id' => 'CONS-' . $consultation->id,
-                'price' => $consultation->fee,
-                'quantity' => 1,
-                'name' => 'Konsultasi ' . ucfirst($consultation->type) . ' dengan ' . $consultation->doctor->user->name,
-                'category' => 'Layanan Konsultasi',
-                'merchant_name' => 'TernakCare',
-            ]
-        ];
-
-        // Menyiapkan detail pelanggan
-        $customerDetails = [
-            'first_name' => $consultation->farmer->user->name,
-            'email' => $consultation->farmer->user->email,
-            'phone' => $consultation->farmer->user->phone ?? '',
-        ];
-
+        
+        // Set parameter untuk Snap API
         $params = [
             'transaction_details' => [
                 'order_id' => $orderId,
-                'gross_amount' => $consultation->fee,
+                'gross_amount' => (int) $consultation->fee,
             ],
-            'item_details' => $itemDetails,
-            'customer_details' => $customerDetails,
-            'callbacks' => [
-                'finish' => route('farmer.consultations.show', $consultation->id),
+            'customer_details' => [
+                'first_name' => $consultation->farmer->user->name,
+                'email' => $consultation->farmer->user->email,
+            ],
+            'item_details' => [
+                [
+                    'id' => 'CONS-' . $consultation->id,
+                    'price' => (int) $consultation->fee,
+                    'quantity' => 1,
+                    'name' => 'Konsultasi ' . ucfirst($consultation->type) . ' dengan ' . $consultation->doctor->user->name,
+                ]
             ],
         ];
-
+        
         try {
-            // Buat token snap
-            $snapToken = Snap::getSnapToken($params);
-
-            // Update consultation dengan order ID Midtrans
-            $consultation->update([
-                'midtrans_order_id' => $orderId,
-                'midtrans_snap_token' => $snapToken,
-            ]);
-
+            // Inisialisasi Snap API
+            \Midtrans\Config::$serverKey = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
+            \Midtrans\Config::$isSanitized = true;
+            \Midtrans\Config::$is3ds = true;
+            
+            // Buat Snap Token
+            $snapToken = \Midtrans\Snap::getSnapToken($params);
+            
+            // Update consultation dengan order ID dan snap token
+            $consultation->midtrans_order_id = $orderId;
+            $consultation->midtrans_snap_token = $snapToken;
+            $consultation->save();
+            
             return $snapToken;
-        } catch (Exception $e) {
-            report($e);
+        } catch (\Exception $e) {
             return null;
         }
     }
@@ -85,48 +81,42 @@ class MidtransService
      * @param array $notification
      * @return void
      */
-    public function handleConsultationPaymentNotification(array $notification)
+/**
+ * Handle consultation payment notification from Midtrans
+ * Tambahkan pada file MidtransService.php
+ */
+// Di dalam MidtransService.php
+    public function handleConsultationPaymentNotification($notification)
     {
-        $orderId = $notification['order_id'];
-        $transactionStatus = $notification['transaction_status'];
-        $fraudStatus = isset($notification['fraud_status']) ? $notification['fraud_status'] : null;
-
-        // Mendapatkan ID konsultasi dari order ID
-        $consultationId = null;
-        if (preg_match('/CONS-(\d+)-\d+/', $orderId, $matches)) {
-            $consultationId = $matches[1];
-        }
-
-        if (!$consultationId) {
-            return;
-        }
-
+        // Ambil order_id yang berisi ID konsultasi
+        $orderId = $notification['order_id'] ?? null;
+        
+        // Extrak ID konsultasi dari order ID (CONS-{id})
+        $consultationId = substr($orderId, 5);
+        
+        // Ambil status transaksi
+        $transactionStatus = $notification['transaction_status'] ?? null;
+        
         $consultation = Consultation::find($consultationId);
-
+        
         if (!$consultation) {
+            \Log::error('Consultation not found: ' . $consultationId);
             return;
         }
-
-        // Handle berbagai status pembayaran
-        if ($transactionStatus == 'capture') {
-            if ($fraudStatus == 'challenge') {
-                // Tidak mengubah status karena perlu review manual
-                $consultation->payment_status = 'challenge';
-            } else if ($fraudStatus == 'accept') {
-                // Pembayaran sukses
-                $this->markConsultationAsPaid($consultation);
+        
+        // Update status konsultasi berdasarkan status pembayaran
+        if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
+            $consultation->is_paid = 1;
+            $consultation->payment_status = 'paid';
+            
+            // Untuk konsultasi chat, langsung set status menjadi active
+            if ($consultation->type === 'chat') {
+                $consultation->status = 'active';
             }
-        } else if ($transactionStatus == 'settlement') {
-            // Pembayaran sukses
-            $this->markConsultationAsPaid($consultation);
-        } else if (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
-            // Pembayaran gagal
-            $consultation->payment_status = 'failed';
+            
             $consultation->save();
-        } else if ($transactionStatus == 'pending') {
-            // Pembayaran tertunda
-            $consultation->payment_status = 'pending';
-            $consultation->save();
+            
+            \Log::info('Payment success for consultation ID: ' . $consultationId);
         }
     }
 
