@@ -11,7 +11,7 @@ use Inertia\Inertia;
 class HistoryController extends Controller
 {
     /**
-     * Display a listing of the completed transactions.
+     * Display a listing of completed transactions.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
@@ -26,18 +26,18 @@ class HistoryController extends Controller
             ->whereIn('status', ['delivered', 'cancelled'])
             ->with(['farmer.user', 'items.product']);
         
-        // Filter by status if provided
-        if ($request->has('status') && in_array($request->status, ['delivered', 'cancelled'])) {
+        // Filter by status hanya jika status tidak kosong
+        if ($request->filled('status') && in_array($request->status, ['delivered', 'cancelled'])) {
             $query->where('status', $request->status);
         }
         
-        // Filter by date range if provided
-        if ($request->has('start_date') && $request->has('end_date')) {
+        // Filter by date range hanya jika kedua tanggal diisi
+        if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
         }
         
-        // Search by farmer name if provided
-        if ($request->has('search')) {
+        // Search by farmer name hanya jika search tidak kosong
+        if ($request->filled('search')) {
             $query->whereHas('farmer.user', function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%');
             });
@@ -47,14 +47,18 @@ class HistoryController extends Controller
             ->paginate(10)
             ->withQueryString();
         
-        // Get statistics
-        $deliveredCount = Transaction::whereHas('items', function ($q) {
+        // Calculate metrics
+        $deliveredTransactions = Transaction::whereHas('items', function ($q) {
                 $q->whereHas('product', function ($p) {
                     $p->where('shop_id', Auth::user()->shop->id);
                 });
             })
             ->where('status', 'delivered')
-            ->count();
+            ->get();
+        
+        $totalSales = $deliveredTransactions->sum('total_amount');
+        $totalTransactions = $deliveredTransactions->count();
+        $averageOrder = $totalTransactions > 0 ? $totalSales / $totalTransactions : 0;
         
         $cancelledCount = Transaction::whereHas('items', function ($q) {
                 $q->whereHas('product', function ($p) {
@@ -65,43 +69,48 @@ class HistoryController extends Controller
             ->count();
         
         return Inertia::render('Shop/History/Index', [
-            'completedTransactions' => $completedTransactions,
+            'transactions' => $completedTransactions,
             'filters' => $request->only(['status', 'start_date', 'end_date', 'search']),
             'statistics' => [
-                'delivered' => $deliveredCount,
-                'cancelled' => $cancelledCount
+                'totalSales' => $totalSales,
+                'totalTransactions' => $totalTransactions,
+                'averageOrder' => $averageOrder,
+                'cancelledOrders' => $cancelledCount
             ]
         ]);
     }
 
-    /**
-     * Display the specified transaction history.
-     *
-     * @param  \App\Models\Transaction  $transaction
-     * @return \Inertia\Response
-     */
-    public function show(Transaction $transaction)
+    public function show($id)
     {
-        // Check if the transaction involves products from the authenticated shop
-        $shopProducts = $transaction->items->filter(function ($item) {
+        $transaction = Transaction::with([
+            'farmer.user',
+            'items.product',
+            'address',
+            'payment'
+        ])->findOrFail($id);
+        
+        // Verifikasi bahwa transaksi ini memiliki setidaknya satu produk dari toko pengguna ini
+        $hasShopProducts = $transaction->items->contains(function ($item) {
             return $item->product->shop_id === Auth::user()->shop->id;
         });
         
-        if ($shopProducts->isEmpty()) {
-            abort(403, 'Unauthorized action.');
+        if (!$hasShopProducts) {
+            abort(403, 'Anda tidak memiliki akses ke transaksi ini');
         }
         
-        // Check if transaction is completed
-        if (!in_array($transaction->status, ['delivered', 'cancelled'])) {
-            return redirect()->route('shop.transactions.show', $transaction->id)
-                ->with('error', 'This transaction is still active.');
-        }
+        // Filter item transaksi untuk hanya menampilkan produk dari toko ini
+        $transaction->items = $transaction->items->filter(function ($item) {
+            return $item->product->shop_id === Auth::user()->shop->id;
+        });
         
-        $transaction->load(['farmer.user', 'items.product']);
+        // Hitung subtotal untuk produk dari toko ini saja
+        $subtotal = $transaction->items->sum(function ($item) {
+            return $item->quantity * $item->price;
+        });
         
         return Inertia::render('Shop/History/Show', [
             'transaction' => $transaction,
-            'shopItems' => $shopProducts
+            'subtotal' => $subtotal
         ]);
     }
 
@@ -128,8 +137,6 @@ class HistoryController extends Controller
             ->with(['farmer.user', 'items.product'])
             ->get();
         
-        // Logic for exporting sales report - this would depend on how you want to handle exports
-        // For simplicity, this is a placeholder
         $fileName = 'sales_report_' . now()->format('Y-m-d') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
@@ -138,14 +145,14 @@ class HistoryController extends Controller
         
         $callback = function() use($completedTransactions) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Transaction ID', 'Farmer', 'Product', 'Quantity', 'Price', 'Total', 'Date']);
+            fputcsv($file, ['ID Transaksi', 'Pelanggan', 'Produk', 'Jumlah', 'Harga', 'Total', 'Tanggal']);
             
             foreach ($completedTransactions as $transaction) {
                 foreach ($transaction->items as $item) {
                     // Only include products from this shop
                     if ($item->product->shop_id === Auth::user()->shop->id) {
                         fputcsv($file, [
-                            $transaction->id,
+                            $transaction->transaction_code,
                             $transaction->farmer->user->name,
                             $item->product->name,
                             $item->quantity,

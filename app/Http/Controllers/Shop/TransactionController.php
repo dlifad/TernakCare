@@ -21,69 +21,65 @@ class TransactionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Transaction::whereHas('items', function ($q) {
-                $q->whereHas('product', function ($p) {
-                    $p->where('shop_id', Auth::user()->shop->id);
-                });
-            })
-            ->with(['farmer.user', 'items.product']);
-        
-        // Filter by status if provided
-        if ($request->has('status') && $request->status !== 'all') {
+        // Inisialisasi query builder
+        $query = Transaction::query()
+            ->with(['farmer.user', 'items.product'])
+            ->where('shop_id', auth::user()->shop->id)
+            ->latest();
+
+        // Filter berdasarkan status jika ada
+        if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
-        
-        // Filter by date range if provided
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
-        }
-        
-        // Search by farmer name if provided
-        if ($request->has('search')) {
-            $query->whereHas('farmer.user', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%');
+
+        // Filter berdasarkan pencarian jika ada
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->whereHas('farmer.user', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             });
         }
-        
-        $transactions = $query->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->withQueryString();
-        
+
+        // Filter berdasarkan tanggal jika ada
+        if ($request->has('start_date') && $request->start_date) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date') && $request->end_date) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        // Ambil data dengan pagination
+        $transactions = $query->paginate(10)->withQueryString();
+
+        // Status transaksi untuk ditampilkan di tab
+        $statuses = [
+            'pending' => 'Menunggu Pembayaran',
+            'processing' => 'Diproses',
+            'shipped' => 'Dikirim',
+            'delivered' => 'Selesai',
+            'cancelled' => 'Dibatalkan',
+        ];
+
         return Inertia::render('Shop/Transactions/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['status', 'start_date', 'end_date', 'search']),
-            'statuses' => $this->getTransactionStatuses()
+            'filters' => $request->only(['status', 'search', 'start_date', 'end_date']),
+            'statuses' => $statuses,
         ]);
     }
 
-    /**
-     * Display the specified transaction.
-     *
-     * @param  \App\Models\Transaction  $transaction
-     * @return \Inertia\Response
-     */
     public function show(Transaction $transaction)
     {
-        // Check if the transaction involves products from the authenticated shop
-        $shopProducts = $transaction->items->filter(function ($item) {
-            return $item->product->shop_id === Auth::user()->shop->id;
-        });
-        
-        if ($shopProducts->isEmpty()) {
-            abort(403, 'Unauthorized action.');
+        // Validasi bahwa transaksi ini milik toko yang sedang login
+        if ($transaction->shop_id !== auth::user()->shop->id) {
+            abort(403, 'Anda tidak memiliki akses untuk melihat transaksi ini.');
         }
-        
-        // Load transaction with relationships
-        $transaction->load([
-            'farmer.user', 
-            'items.product',
-            'bankAccount'
-        ]);
-        
+
+        // Load relasi yang dibutuhkan
+        $transaction->load(['farmer.user', 'items.product']);
+
         return Inertia::render('Shop/Transactions/Show', [
-            'transaction' => $transaction,
-            'shopItems' => $shopProducts,
-            'statuses' => $this->getTransactionStatuses()
+            'transaction' => $transaction
         ]);
     }
 

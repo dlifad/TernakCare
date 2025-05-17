@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Cart;
+use Illuminate\Support\Facades\Auth;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -39,9 +41,14 @@ class HandleInertiaRequests extends Middleware
                     'photo_url' => $request->user()->photo_url
                         ? 'storage/' . $request->user()->photo_url
                         : null,
-
                 ] : null,
             ],
+
+            // Tambahkan ini:
+            'cartCount' => fn () => Auth::check() && Auth::user()->farmer
+                ? Cart::where('farmer_id', Auth::user()->farmer->id)
+                    ->first()?->items()->count() ?? 0
+                : 0,
         ]);
     }
 }

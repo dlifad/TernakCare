@@ -7,7 +7,7 @@ import { Head, usePage } from "@inertiajs/react";
 const Dashboard = ({ auth }) => {
     // Mengambil data dashboard dari props Inertia yang dikirim dari controller
     const { dashboardData } = usePage().props;
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats] = useState({
         totalProducts: 0,
         activeProducts: 0,
@@ -87,6 +87,9 @@ const Dashboard = ({ auth }) => {
         }
     };
 
+    // Untuk debugging
+    console.log("Monthly Revenue Data:", stats.monthlyRevenue);
+
     return (
         <ShopLayout user={auth.user}>
             <Head title="Dashboard Toko" />
@@ -157,7 +160,7 @@ const Dashboard = ({ auth }) => {
                                         </a>
                                     </div>
 
-                                    {stats.recentTransactions.length > 0 ? (
+                                    {stats.recentTransactions && stats.recentTransactions.length > 0 ? (
                                         <Table
                                             headers={[
                                                 "ID",
@@ -206,7 +209,7 @@ const Dashboard = ({ auth }) => {
                                         </h2>
                                     </div>
 
-                                    {stats.topProducts.length > 0 ? (
+                                    {stats.topProducts && stats.topProducts.length > 0 ? (
                                         <ul className="space-y-3">
                                             {stats.topProducts.map(
                                                 (product, index) => (
@@ -260,26 +263,31 @@ const Dashboard = ({ auth }) => {
                                         </h2>
                                     </div>
 
-                                    {stats.monthlyRevenue.length > 0 ? (
-                                        <div className="h-64 flex items-end justify-between">
+                                    {stats.monthlyRevenue && stats.monthlyRevenue.length > 0 ? (
+                                        <div className="h-64 flex items-end justify-between px-4">
                                             {stats.monthlyRevenue.map(
                                                 (month, index) => {
                                                     // Simple bar chart calculation
                                                     const maxRevenue = Math.max(
                                                         ...stats.monthlyRevenue.map(
                                                             (m) => m.amount
-                                                        )
+                                                        ), 1 // Prevent division by zero
                                                     );
-                                                    const height =
-                                                        (month.amount /
-                                                            maxRevenue) *
-                                                        100;
+                                                    const height = month.amount > 0
+                                                        ? (month.amount / maxRevenue) * 100
+                                                        : 5; // Minimal height for zero values
 
                                                     return (
                                                         <div
                                                             key={index}
-                                                            className="flex flex-col items-center"
+                                                            className="flex flex-col items-center w-1/6"
                                                         >
+                                                            <div className="mb-2 text-xs font-medium text-neutral-dark">
+                                                                {month.amount > 0 
+                                                                    ? `Rp ${month.amount.toLocaleString('id-ID')}`
+                                                                    : '-'
+                                                                }
+                                                            </div>
                                                             <div
                                                                 className="w-8 bg-primary rounded-t-md transition-all duration-500"
                                                                 style={{

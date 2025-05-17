@@ -54,7 +54,8 @@ class MarketplaceController extends Controller
         // Get cart count
         $cartCount = 0;
         if (Auth::check() && Auth::user()->farmer) {
-            $cartCount = Cart::where('farmer_id', Auth::user()->farmer->id)->count();
+            $cartCount = Cart::where('farmer_id', Auth::user()->farmer->id)
+                ->first()?->items()->count() ?? 0;
         }
 
         return Inertia::render('Farmer/Marketplace/Index', compact('products', 'categories', 'filters', 'cartCount'));
@@ -76,7 +77,7 @@ class MarketplaceController extends Controller
         // Check if product is in cart
         $inCart = false;
         $cartQuantity = 0;
-        
+
         if (Auth::check() && Auth::user()->farmer) {
             $cartItem = Cart::where('farmer_id', Auth::user()->farmer->id)
                 ->whereHas('items', function ($q) use ($product) {
@@ -91,18 +92,19 @@ class MarketplaceController extends Controller
                 $inCart = true;
                 $cartQuantity = $cartItem->items->first()->quantity;
             }
-
         }
 
         // Get cart count
         $cartCount = 0;
         if (Auth::check() && Auth::user()->farmer) {
-            $cartCount = Cart::where('farmer_id', Auth::user()->farmer->id)->count();
+            $cartCount = Cart::where('farmer_id', Auth::user()->farmer->id)
+                ->first()?->items()->count() ?? 0;
+
         }
 
         return Inertia::render('Farmer/Marketplace/Product', compact(
-            'product', 
-            'relatedProducts', 
+            'product',
+            'relatedProducts',
             'inCart',
             'cartQuantity',
             'cartCount'

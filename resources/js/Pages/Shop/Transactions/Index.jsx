@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     ShoppingBag,
     ChevronDown,
@@ -19,26 +19,66 @@ export default function Transactions({ auth, transactions, filters, statuses }) 
     const [startDate, setStartDate] = useState(filters?.start_date || "");
     const [endDate, setEndDate] = useState(filters?.end_date || "");
 
+    // Fungsi debounce untuk mencegah terlalu banyak request
+    const debounce = (func, delay) => {
+        let debounceTimer;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func.apply(context, args), delay);
+        };
+    };
+
+    // Membuat fungsi pencarian dengan debounce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedSearch = useCallback(
+        debounce((term) => {
+            updateFilters({ search: term });
+        }, 500),
+        []
+    );
+
     useEffect(() => {
-        // Update URL when tab changes
-        if (activeTab !== (filters?.status || "all")) {
-            updateFilters({ status: activeTab === "all" ? null : activeTab });
+        if (activeTab === "all") {
+            updateFilters({ status: null });
+        } else if (activeTab !== (filters?.status || "all")) {
+            updateFilters({ status: activeTab });
         }
     }, [activeTab]);
 
+    // Efek untuk pencarian otomatis
+    useEffect(() => {
+        if (searchTerm !== filters?.search) {
+            debouncedSearch(searchTerm);
+        }
+    }, [searchTerm, debouncedSearch, filters?.search]);
+
     const updateFilters = (newFilters) => {
-        router.get(route('shop.transactions.index'), {
-            ...filters,
-            ...newFilters
-        }, {
+        // Buat objek filters baru dari filters yang sudah ada
+        const updatedFilters = { ...filters };
+        
+        // Update dengan filter baru
+        Object.assign(updatedFilters, newFilters);
+        
+        // Jika status = null atau status = all, hapus dari filter
+        if (newFilters.status === null || newFilters.status === 'all' || newFilters.status === '') {
+            delete updatedFilters.status;
+        }
+        
+        // Jika search kosong, hapus dari filter
+        if (newFilters.search === '') {
+            delete updatedFilters.search;
+        }
+        
+        router.get(route('shop.transactions.index'), updatedFilters, {
             preserveState: true,
             replace: true
         });
     };
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        updateFilters({ search: searchTerm });
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
     };
 
     const handleDateFilter = () => {
@@ -105,7 +145,7 @@ export default function Transactions({ auth, transactions, filters, statuses }) 
 
                 {/* Search and Filter */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4">
-                    <form onSubmit={handleSearch} className="relative flex-1">
+                    <div className="relative flex-1">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search size={18} className="text-neutral" />
                         </div>
@@ -114,9 +154,9 @@ export default function Transactions({ auth, transactions, filters, statuses }) 
                             placeholder="Cari nama peternak..."
                             className="block w-full pl-10 pr-3 py-2 border border-neutral-light rounded-lg focus:ring-primary focus:border-primary"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={handleSearchChange}
                         />
-                    </form>
+                    </div>
                     <div className="flex gap-2">
                         <div className="flex items-center gap-2">
                             <input

@@ -201,6 +201,8 @@ Route::middleware(['auth', 'role:shop', 'verified'])->prefix('shop')->name('shop
 
     // Riwayat dan Profil
     Route::get('/history', [ShopHistoryController::class, 'index'])->name('history');
+    Route::get('/history/{id}', [ShopHistoryController::class, 'show'])->name('history.show');
+
     // Route::get('/profile', [ShopProfileController::class, 'edit'])->name('profile.edit');
     // Route::patch('/profile', [ShopProfileController::class, 'update'])->name('profile.update');
 
@@ -256,7 +258,6 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
 
     // Cart Routes
     Route::get('/cart', [App\Http\Controllers\Farmer\CartController::class, 'index'])->name('cart.index');
-    Route::get('/cart', [App\Http\Controllers\Farmer\CartController::class, 'index'])->name('cart');
     Route::post('/cart/process-payment', [App\Http\Controllers\Farmer\CartController::class, 'processPayment'])->name('cart.process_payment');
 
     Route::post('/cart/add', [App\Http\Controllers\Farmer\CartController::class, 'add'])->name('cart.add');

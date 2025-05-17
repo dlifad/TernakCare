@@ -9,11 +9,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
-
-
 
 class CartController extends Controller
 {
@@ -27,17 +23,19 @@ class CartController extends Controller
         // Get cart for current farmer
         $cart = Cart::where('farmer_id', Auth::user()->farmer->id)->first();
         
-        // Get cart items with their products
+        // Get cart items with their products and related data
         $cartItems = $cart ? $cart->items()->with(['product.shop.user', 'product.images'])->get() : collect([]);
         
         // Group cart items by shop
         $itemsByShop = $cartItems->groupBy('product.shop_id');
         
-        // Calculate totals
+        // Calculate total price
         $subtotal = $cartItems->sum(function ($item) {
             return $item->product ? $item->product->price * $item->quantity : 0;
         });
 
+        // Render page with data
+        // Note: cartCount will be provided by middleware and doesn't need to be passed here
         return Inertia::render('Farmer/Marketplace/Cart', [
             'cartItems' => $cartItems,
             'itemsByShop' => $itemsByShop,
@@ -208,5 +206,4 @@ class CartController extends Controller
             'farmer' => $farmer,
         ]);
     }
-
 }

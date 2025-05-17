@@ -94,30 +94,58 @@ class TransactionService
                 'products.id',
                 'products.name',
                 'products.price',
-                DB::raw('SUM(transaction_items.quantity) as sold')
+                DB::raw('SUM(COALESCE(transaction_items.quantity, 0)) as sold')
             )
             ->groupBy('products.id', 'products.name', 'products.price')
             ->orderBy('sold', 'desc')
             ->limit(5)
             ->get();
         
+        // PERBAIKAN: Logika untuk mendapatkan pendapatan bulanan lebih jelas
         $monthlyRevenue = [];
-        $startDate = Carbon::now()->subMonths(5)->startOfMonth();
         
-        for ($i = 0; $i < 6; $i++) {
-            $currentMonth = $startDate->copy()->addMonths($i);
-            $nextMonth = $currentMonth->copy()->addMonth();
-            
+        // Mulai dari 5 bulan yang lalu sampai bulan saat ini (6 bulan total)
+        $startDate = Carbon::now()->subMonths(5)->startOfMonth();
+        $endDate = Carbon::now()->endOfMonth();
+        
+        // Buat array bulan-bulan yang akan ditampilkan
+        $months = [];
+        $currentDate = $startDate->copy();
+        
+        // Buat array bulan-bulan dari startDate sampai endDate
+        while ($currentDate->lte($endDate)) {
+            $months[] = [
+                'start' => $currentDate->copy()->startOfMonth(),
+                'end' => $currentDate->copy()->endOfMonth(),
+                'label' => $currentDate->format('M'), // Format bulan singkat (Dec, Jan, Feb, dst)
+            ];
+            $currentDate->addMonth();
+        }
+        
+        // Log untuk membantu debugging
+        Log::info("Generating monthly revenue for " . count($months) . " months");
+        
+        // Iterasi melalui setiap bulan untuk mendapatkan pendapatan
+        foreach ($months as $month) {
             $revenue = Transaction::where('shop_id', $shopId)
                 ->whereIn('status', ['shipped', 'delivered'])
-                ->whereBetween('created_at', [$currentMonth, $nextMonth])
+                ->whereBetween('created_at', [
+                    $month['start']->format('Y-m-d H:i:s'),
+                    $month['end']->format('Y-m-d H:i:s')
+                ])
                 ->sum('total_amount');
             
+            // Log untuk membantu debugging
+            Log::info("Revenue for {$month['label']}: {$revenue}");
+            
             $monthlyRevenue[] = [
-                'month' => $currentMonth->format('M'),
+                'month' => $month['label'],
                 'amount' => (float) $revenue
             ];
         }
+        
+        // Log semua revenue untuk debugging
+        Log::info("Monthly revenue data: " . json_encode($monthlyRevenue));
         
         return [
             'totalProducts' => $totalProducts,

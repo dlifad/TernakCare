@@ -162,8 +162,17 @@ const ProfileDropdown = ({ user, dropdownOpen, toggleDropdown }) => {
     );
 };
 
-export default function FarmerLayout({ user, children, cartCount = 0 }) {
+export default function FarmerLayout({ user, children, cartCount }) {
     const { url } = usePage();
+    // Mengambil data cartCount dari props Inertia (shared data)
+    const { cartCount: sharedCartCount } = usePage().props;
+    
+    // Menggunakan prioritas:
+    // 1. Jika cartCount dari props komponen tersedia, gunakan itu (untuk halaman Cart)
+    // 2. Jika tidak, gunakan cartCount dari shared data (untuk halaman lain)
+    // 3. Default ke 0 jika keduanya tidak tersedia
+    const finalCartCount = cartCount !== undefined ? cartCount : (sharedCartCount || 0);
+    
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -217,8 +226,8 @@ export default function FarmerLayout({ user, children, cartCount = 0 }) {
                         </div>
 
                         <div className="flex items-center">
-                            {/* Make sure cart count is correctly passed */}
-                            <CartButton cartCount={parseInt(cartCount) || 0} />
+                            {/* Gunakan finalCartCount untuk memastikan konsistensi jumlah item di semua halaman */}
+                            <CartButton cartCount={finalCartCount} />
                             
                             {notificationsOpen && (
                                 <NotificationPanel

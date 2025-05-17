@@ -1,69 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     ClipboardList,
     Calendar,
     Download,
     Search,
-    Filter,
     ChevronDown,
     Eye,
 } from "lucide-react";
 import ShopLayout from "@/Layouts/ShopLayout";
-import { Head } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
+import { format } from '@/Components/Common/format';
 
-export default function History({ auth }) {
-    const [activeTab, setActiveTab] = useState("all");
-    const [dateRange, setDateRange] = useState("all");
 
-    // Sample data for demonstration
-    const transactions = [
-        {
-            id: "TRX-001",
-            customer: "Ahmad Fajar",
-            date: "10 Apr 2025",
-            total: 750000,
-            status: "completed",
-            payment_method: "Bank Transfer",
-        },
-        {
-            id: "TRX-002",
-            customer: "Budi Santoso",
-            date: "5 Apr 2025",
-            total: 450000,
-            status: "completed",
-            payment_method: "E-Wallet",
-        },
-        {
-            id: "TRX-003",
-            customer: "Citra Dewi",
-            date: "2 Apr 2025",
-            total: 1250000,
-            status: "completed",
-            payment_method: "Bank Transfer",
-        },
-        {
-            id: "TRX-004",
-            customer: "Deni Mahardika",
-            date: "25 Mar 2025",
-            total: 320000,
-            status: "cancelled",
-            payment_method: "COD",
-        },
-        {
-            id: "TRX-005",
-            customer: "Eka Putri",
-            date: "20 Mar 2025",
-            total: 890000,
-            status: "completed",
-            payment_method: "E-Wallet",
-        },
-    ];
+export default function History({ auth, transactions, filters, statistics }) {
+    const [searchQuery, setSearchQuery] = useState(filters.search || "");
+    const [activeTab, setActiveTab] = useState(filters.status || "all");
+    const [startDate, setStartDate] = useState(filters.start_date || "");
+    const [endDate, setEndDate] = useState(filters.end_date || "");
+    const [didMount, setDidMount] = useState(false);
 
-    const filteredTransactions =
-        activeTab === "all"
-            ? transactions
-            : transactions.filter((tx) => tx.status === activeTab);
 
+    useEffect(() => {
+
+        if (!didMount) {
+            setDidMount(true);
+            return;
+        }
+
+        if (searchQuery !== (filters.search || "")) {
+            const debounce = setTimeout(() => {
+                applyFilters();
+            }, 500);
+
+            return () => clearTimeout(debounce);
+        }
+    }, [searchQuery]);
+
+
+    // Format currency to IDR
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
@@ -72,9 +46,50 @@ export default function History({ auth }) {
         }).format(amount);
     };
 
+    // Change active tab and filter transactions
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        applyFilters(tab);
+    };
+
+    // Apply filters and redirect to the same page with the filters in the query string
+    const applyFilters = (status = activeTab) => {
+        router.get(
+            route("shop.history"),
+            {
+                search: searchQuery,
+                status: status === "all" ? "" : status,
+                start_date: startDate,
+                end_date: endDate,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    };
+
+    // Handle date filter submissions
+    const handleDateFilterSubmit = () => {
+        applyFilters();
+    };
+
+    // Export report
+    const handleExport = () => {
+        if (!startDate || !endDate) {
+            alert("Harap pilih tanggal mulai dan selesai untuk ekspor laporan");
+            return;
+        }
+        
+        // Redirect to export URL with the date range as query parameters
+        window.location.href = route("shop.history.export") + 
+            "?start_date=" + startDate + "&end_date=" + endDate;
+    };
+
+    // Get status badge class based on the status
     const getStatusBadgeClass = (status) => {
         switch (status) {
-            case "completed":
+            case "delivered":
                 return "bg-success/20 text-success";
             case "cancelled":
                 return "bg-danger/20 text-danger";
@@ -83,18 +98,17 @@ export default function History({ auth }) {
         }
     };
 
-    // Summary metrics
-    const totalSales = transactions
-        .filter((tx) => tx.status === "completed")
-        .reduce((sum, tx) => sum + tx.total, 0);
-    const totalTransactions = transactions.filter(
-        (tx) => tx.status === "completed",
-    ).length;
-    const averageOrder =
-        totalTransactions > 0 ? totalSales / totalTransactions : 0;
-    const cancelledOrders = transactions.filter(
-        (tx) => tx.status === "cancelled",
-    ).length;
+    // Get status text based on the status
+    const getStatusText = (status) => {
+        switch (status) {
+            case "delivered":
+                return "Selesai";
+            case "cancelled":
+                return "Dibatalkan";
+            default:
+                return status;
+        }
+    };
 
     return (
         <ShopLayout user={auth.user}>
@@ -124,9 +138,9 @@ export default function History({ auth }) {
                             </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-neutral-darkest">
-                            {formatCurrency(totalSales)}
+                            {formatCurrency(statistics.totalSales)}
                         </p>
-                        <p className="text-xs text-neutral">30 hari terakhir</p>
+                        <p className="text-xs text-neutral">Transaksi selesai</p>
                     </div>
 
                     <div className="bg-white p-4 rounded-lg shadow-card">
@@ -142,9 +156,9 @@ export default function History({ auth }) {
                             </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-neutral-darkest">
-                            {totalTransactions}
+                            {statistics.totalTransactions}
                         </p>
-                        <p className="text-xs text-neutral">30 hari terakhir</p>
+                        <p className="text-xs text-neutral">Transaksi selesai</p>
                     </div>
 
                     <div className="bg-white p-4 rounded-lg shadow-card">
@@ -160,7 +174,7 @@ export default function History({ auth }) {
                             </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-neutral-darkest">
-                            {formatCurrency(averageOrder)}
+                            {formatCurrency(statistics.averageOrder)}
                         </p>
                         <p className="text-xs text-neutral">per transaksi</p>
                     </div>
@@ -178,9 +192,9 @@ export default function History({ auth }) {
                             </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-neutral-darkest">
-                            {cancelledOrders}
+                            {statistics.cancelledOrders}
                         </p>
-                        <p className="text-xs text-neutral">30 hari terakhir</p>
+                        <p className="text-xs text-neutral">Total dibatalkan</p>
                     </div>
                 </div>
 
@@ -193,31 +207,37 @@ export default function History({ auth }) {
                         <input
                             type="text"
                             placeholder="Cari transaksi..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="block w-full pl-10 pr-3 py-2 border border-neutral-light rounded-lg focus:ring-primary focus:border-primary"
                         />
                     </div>
-                    <div className="flex gap-2">
-                        <div className="relative">
-                            <select
-                                className="appearance-none bg-white border border-neutral-light rounded-lg px-4 py-2 pr-8 focus:ring-primary focus:border-primary text-neutral-dark"
-                                value={dateRange}
-                                onChange={(e) => setDateRange(e.target.value)}
-                            >
-                                <option value="all">Semua Tanggal</option>
-                                <option value="today">Hari Ini</option>
-                                <option value="week">Minggu Ini</option>
-                                <option value="month">Bulan Ini</option>
-                                <option value="custom">Kustom</option>
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-dark">
-                                <ChevronDown size={16} />
-                            </div>
-                        </div>
-                        <button className="flex items-center gap-1 px-4 py-2 bg-white border border-neutral-light rounded-lg text-neutral-dark hover:bg-neutral-lightest">
+                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="px-4 py-2 border border-neutral-light rounded-lg"
+                            placeholder="Tanggal Mulai"
+                        />
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="px-4 py-2 border border-neutral-light rounded-lg"
+                            placeholder="Tanggal Selesai"
+                        />
+                        <button 
+                            onClick={handleDateFilterSubmit}
+                            className="flex items-center gap-1 px-4 py-2 bg-white border border-neutral-light rounded-lg text-neutral-dark hover:bg-neutral-lightest"
+                        >
                             <Calendar size={18} />
-                            <span>Tanggal</span>
+                            <span>Terapkan</span>
                         </button>
-                        <button className="flex items-center gap-1 px-4 py-2 bg-white border border-neutral-light rounded-lg text-neutral-dark hover:bg-neutral-lightest">
+                        <button 
+                            onClick={handleExport}
+                            className="flex items-center gap-1 px-4 py-2 bg-white border border-neutral-light rounded-lg text-neutral-dark hover:bg-neutral-lightest"
+                        >
                             <Download size={18} />
                             <span>Ekspor</span>
                         </button>
@@ -228,19 +248,19 @@ export default function History({ auth }) {
                 <div className="mb-6 border-b border-neutral-light">
                     <nav className="flex space-x-6">
                         <button
-                            onClick={() => setActiveTab("all")}
+                            onClick={() => handleTabChange("all")}
                             className={`pb-3 px-1 ${activeTab === "all" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
                         >
                             Semua
                         </button>
                         <button
-                            onClick={() => setActiveTab("completed")}
-                            className={`pb-3 px-1 ${activeTab === "completed" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
+                            onClick={() => handleTabChange("delivered")}
+                            className={`pb-3 px-1 ${activeTab === "delivered" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
                         >
                             Selesai
                         </button>
                         <button
-                            onClick={() => setActiveTab("cancelled")}
+                            onClick={() => handleTabChange("cancelled")}
                             className={`pb-3 px-1 ${activeTab === "cancelled" ? "border-b-2 border-primary font-medium text-primary" : "text-neutral-dark"}`}
                         >
                             Dibatalkan
@@ -275,12 +295,6 @@ export default function History({ auth }) {
                                     scope="col"
                                     className="px-6 py-3 text-left text-xs font-medium text-neutral-dark uppercase tracking-wider"
                                 >
-                                    Metode Pembayaran
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-neutral-dark uppercase tracking-wider"
-                                >
                                     Status
                                 </th>
                                 <th
@@ -298,70 +312,84 @@ export default function History({ auth }) {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-neutral-light">
-                            {filteredTransactions.map((transaction) => (
-                                <tr
-                                    key={transaction.id}
-                                    className="hover:bg-neutral-lightest"
-                                >
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-darkest">
-                                        {transaction.id}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-dark">
-                                        {transaction.customer}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-dark">
-                                        {transaction.date}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-dark">
-                                        {transaction.payment_method}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(transaction.status)}`}
-                                        >
-                                            {transaction.status ===
-                                                "completed" && "Selesai"}
-                                            {transaction.status ===
-                                                "cancelled" && "Dibatalkan"}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-neutral-darkest">
-                                        {formatCurrency(transaction.total)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button className="text-primary hover:text-primary-dark">
-                                            <Eye size={18} />
-                                        </button>
+                            {transactions.data.length > 0 ? (
+                                transactions.data.map((transaction) => (
+                                    <tr
+                                        key={transaction.id}
+                                        className="hover:bg-neutral-lightest"
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-darkest">
+                                            {transaction.transaction_code}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-dark">
+                                            {transaction.farmer.user.name}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-dark">
+                                            {format.formatDate(transaction.created_at)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(transaction.status)}`}
+                                            >
+                                                {getStatusText(transaction.status)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-neutral-darkest">
+                                            {formatCurrency(transaction.total_amount)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <Link
+                                                href={route('shop.history.show', transaction.id)}
+                                                className="text-primary hover:text-primary-dark"
+                                            >
+                                                <span>Detail</span>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan="6"
+                                        className="px-6 py-4 text-center text-neutral-dark"
+                                    >
+                                        Tidak ada transaksi yang ditemukan
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
 
                     {/* Pagination */}
-                    <div className="px-6 py-3 flex items-center justify-between border-t border-neutral-light">
-                        <div className="text-sm text-neutral-dark">
-                            Menampilkan 1-{filteredTransactions.length} dari{" "}
-                            {filteredTransactions.length} hasil
+                    {transactions.data.length > 0 && (
+                        <div className="px-6 py-3 flex items-center justify-between border-t border-neutral-light">
+                            <div className="text-sm text-neutral-dark">
+                                Menampilkan {transactions.from}-{transactions.to} dari{" "}
+                                {transactions.total} hasil
+                            </div>
+                            <div className="flex gap-2">
+                                {transactions.links.map((link, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => {
+                                            if (link.url) {
+                                                window.location.href = link.url;
+                                            }
+                                        }}
+                                        className={`px-3 py-1 ${
+                                            link.active
+                                                ? "bg-primary text-white"
+                                                : "border border-neutral-light text-neutral-dark"
+                                        } rounded ${
+                                            !link.url ? "opacity-50 cursor-not-allowed" : ""
+                                        }`}
+                                        disabled={!link.url}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex gap-2">
-                            <button
-                                className="px-3 py-1 border border-neutral-light rounded text-neutral-dark disabled:opacity-50"
-                                disabled
-                            >
-                                Sebelumnya
-                            </button>
-                            <button className="px-3 py-1 bg-primary text-white rounded">
-                                1
-                            </button>
-                            <button
-                                className="px-3 py-1 border border-neutral-light rounded text-neutral-dark disabled:opacity-50"
-                                disabled
-                            >
-                                Selanjutnya
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </ShopLayout>
