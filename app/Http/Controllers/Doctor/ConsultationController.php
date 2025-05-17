@@ -43,7 +43,9 @@ class ConsultationController extends Controller
                     'complaint' => $consultation->issue,
                     'image' => null, // Tambahkan logic untuk gambar jika diperlukan
                     'location' => $consultation->location,
-                    'is_completed' => $consultation->is_completed
+                    'is_completed' => $consultation->is_completed,
+                    'is_paid' => (bool)$consultation->is_paid, // Konversi ke boolean
+                    'payment_status' => $consultation->payment_status
                 ];
             });
         

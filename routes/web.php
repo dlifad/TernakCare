@@ -174,6 +174,9 @@ Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('
     Route::post('/profile', [DoctorProfileController::class, 'update'])->name('profile.update');
     Route::post('/password/update', [DoctorProfileController::class, 'updatePassword'])->name('password.update');
     Route::post('/settings/update', [DoctorProfileController::class, 'updateSettings'])->name('settings.update');
+    Route::get('/history/{consultation}', [DoctorHistoryController::class, 'show'])->name('history.show');
+    Route::get('/history/export', [DoctorHistoryController::class, 'export'])->name('export');
+
 });
 
 // Rute toko

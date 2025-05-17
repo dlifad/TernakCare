@@ -11,6 +11,7 @@ import {
     UserCircle,
     Video,
     MapPin,
+    CreditCard,
 } from "lucide-react";
 
 export default function DoctorConsultation({ consultations = [], auth, flash }) {
@@ -68,6 +69,24 @@ export default function DoctorConsultation({ consultations = [], auth, flash }) 
                 {config.label}
             </span>
         );
+    };
+
+    const paymentBadge = (isPaid, paymentStatus) => {
+        if (isPaid) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <CreditCard size={12} className="mr-1" />
+                    Sudah Dibayar
+                </span>
+            );
+        } else {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    <CreditCard size={12} className="mr-1" />
+                    Belum Dibayar
+                </span>
+            );
+        }
     };
 
     const consultationTypeIcon = (type) => {
@@ -293,6 +312,10 @@ export default function DoctorConsultation({ consultations = [], auth, flash }) 
                                                             consultation.consultation_type,
                                                         )}
                                                     </span>
+                                                    {paymentBadge(
+                                                        consultation.is_paid,
+                                                        consultation.payment_status
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -347,7 +370,13 @@ export default function DoctorConsultation({ consultations = [], auth, flash }) 
                                         ) : (
                                             <Link
                                                 href={route('doctor.consultations.show', consultation.id)}
-                                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                                                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${!consultation.is_paid ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'}`}
+                                                disabled={!consultation.is_paid}
+                                                onClick={(e) => {
+                                                    if (!consultation.is_paid) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
                                             >
                                                 {consultation.consultation_type === "chat" ? (
                                                     <MessageCircle size={16} className="mr-2" />
@@ -357,13 +386,15 @@ export default function DoctorConsultation({ consultations = [], auth, flash }) 
                                                     <MapPin size={16} className="mr-2" />
                                                 )}
 
-                                                {consultation.status === "approved"
-                                                    ? consultation.consultation_type === "chat"
-                                                        ? "Mulai Chat"
-                                                        : consultation.consultation_type === "video_call"
-                                                            ? "Mulai Video Call"
-                                                            : "Lihat Detail Kunjungan"
-                                                    : "Lihat Detail"}
+                                                {!consultation.is_paid 
+                                                    ? "Menunggu Pembayaran"
+                                                    : consultation.status === "approved"
+                                                        ? consultation.consultation_type === "chat"
+                                                            ? "Mulai Chat"
+                                                            : consultation.consultation_type === "video_call"
+                                                                ? "Mulai Video Call"
+                                                                : "Lihat Detail Kunjungan"
+                                                        : "Lihat Detail"}
                                             </Link>
                                         )}
                                     </div>

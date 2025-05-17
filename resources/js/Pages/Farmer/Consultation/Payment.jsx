@@ -81,7 +81,7 @@ const Payment = ({ consultation, auth, clientKey }) => {
           <div className="mb-6">
             <Link 
               href={route('farmer.consultations.show', consultation.id)}
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center text-primary hover:text-primary-dark"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Kembali ke Detail Konsultasi
