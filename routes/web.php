@@ -154,11 +154,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
 // Rute dokter
 Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('doctor.')->group(function () {
+    // Dashboard
     Route::get('/dashboard', [DoctorDashboardController::class, 'index'])->name('dashboard');
     Route::post('/consultations/{id}/accept', [DoctorDashboardController::class, 'accept'])->name('consultations.accept');
     Route::post('/consultations/{id}/decline', [DoctorDashboardController::class, 'decline'])->name('consultations.decline');
 
     // Konsultasi
+    Route::post('/consultations/filter-by-type', [DoctorConsultationController::class, 'filterByType'])->name('consultations.filter.type');
     Route::resource('consultations', DoctorConsultationController::class);
     Route::patch('/consultations/{consultation}/approve', [DoctorConsultationController::class, 'approve'])->name('consultations.approve');
     Route::patch('/consultations/{consultation}/reject', [DoctorConsultationController::class, 'reject'])->name('consultations.reject');

@@ -9,55 +9,124 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
-
-
 class ConsultationController extends Controller
 {
     /**
      * Display a listing of the consultations.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $pendingConsultations = Consultation::where('doctor_id', Auth::user()->doctor->id)
-            ->where('status', 'pending')
-            ->with('farmer.user')
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
+        // Ambil semua konsultasi yang dimiliki oleh dokter yang sedang login
+        $query = Consultation::where('doctor_id', Auth::user()->doctor->id)
+            ->with(['farmer.user', 'chats']);
+        
+        // Filter berdasarkan tipe konsultasi jika parameter tipe diberikan
+        if ($request->has('type') && $request->type !== 'all') {
+            $query->where('type', $request->type);
+        }
+        
+        $consultations = $query->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($consultation) {
+                return [
+                    'id' => $consultation->id,
+                    'patient_name' => $consultation->farmer->user->name,
+                    'status' => $consultation->status,
+                    'date' => $consultation->schedule ? $consultation->schedule->format('d M Y') : '-',
+                    'time' => $consultation->schedule ? $consultation->schedule->format('H:i') . ' - ' . 
+                        $consultation->schedule->addHour()->format('H:i') : '-',
+                    'animal_type' => $consultation->animal_type ?? '-',
+                    'consultation_type' => $consultation->type,
+                    'complaint' => $consultation->issue,
+                    'image' => null, // Tambahkan logic untuk gambar jika diperlukan
+                    'location' => $consultation->location,
+                    'is_completed' => $consultation->is_completed
+                ];
+            });
+        
         return Inertia::render('Doctor/Consultations/Index', [
-            'pendingConsultations' => $pendingConsultations
+            'consultations' => $consultations,
+            'filters' => [
+                'type' => $request->type ?? 'all',
+                'status' => $request->status ?? 'all'
+            ]
         ]);
     }
 
     /**
      * Display the specified consultation.
      *
-     * @param  \App\Models\Consultation  $consultation
+     * @param  int  $id
      * @return \Inertia\Response
      */
-    public function show(Consultation $consultation)
+    public function show($id)
     {
+        $consultation = Consultation::with(['farmer.user', 'chats'])->findOrFail($id);
+        
         // Check if the consultation belongs to the authenticated doctor
         if ($consultation->doctor_id !== Auth::user()->doctor->id) {
             abort(403, 'Unauthorized action.');
         }
-
-        $consultation->load('farmer.user');
-        
-        // If this is a chat consultation, load messages
-        $chats = null;
-        if ($consultation->type === 'chat') {
-            $chats = Chat::where('consultation_id', $consultation->id)
-                ->orderBy('created_at', 'asc')
-                ->get();
-        }
         
         return Inertia::render('Doctor/Consultations/Show', [
-            'consultation' => $consultation,
-            'chats' => $chats
+            'consultation' => [
+                'id' => $consultation->id,
+                'patient_name' => $consultation->farmer->user->name,
+                'status' => $consultation->status,
+                'date' => $consultation->schedule ? $consultation->schedule->format('d M Y') : '-',
+                'time' => $consultation->schedule ? $consultation->schedule->format('H:i') . ' - ' . 
+                    $consultation->schedule->addHour()->format('H:i') : '-',
+                'animal_type' => $consultation->animal_type ?? '-',
+                'consultation_type' => $consultation->type,
+                'complaint' => $consultation->issue,
+                'description' => $consultation->description,
+                'notes' => $consultation->notes,
+                'location' => $consultation->location,
+                'is_completed' => $consultation->is_completed,
+                'created_at' => $consultation->created_at->format('d M Y H:i'),
+                'chats' => $consultation->chats->map(function ($chat) {
+                    return [
+                        'id' => $chat->id,
+                        'message' => $chat->message,
+                        'sender_type' => $chat->sender_type,
+                        'created_at' => $chat->created_at->format('d M Y H:i')
+                    ];
+                })
+            ]
         ]);
+    }
+
+    /**
+     * Filter consultations by type.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function filterByType(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => 'required|string|in:all,chat,video_call,visit',
+        ]);
+        
+        return redirect()->route('doctor.consultations.index', ['type' => $validated['type']]);
+    }
+
+    /**
+     * Filter consultations by status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function filterByStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:all,pending,approved,completed,rejected',
+        ]);
+        
+        return redirect()->route('doctor.consultations.index', ['status' => $validated['status']]);
     }
 
     /**
@@ -85,7 +154,62 @@ class ConsultationController extends Controller
         ]);
         
         return redirect()->route('doctor.consultations.index')
-            ->with('message', "Consultation has been {$request->status}.");
+            ->with('message', "Konsultasi telah " . 
+                ($request->status == 'approved' ? 'disetujui' : 'ditolak') . ".");
+    }
+
+    /**
+     * Approve the consultation.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Consultation  $consultation
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function approve(Request $request, Consultation $consultation)
+    {
+        // Check if the consultation belongs to the authenticated doctor
+        if ($consultation->doctor_id !== Auth::user()->doctor->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $request->validate([
+            'notes' => 'nullable|string|max:255',
+        ]);
+        
+        $consultation->update([
+            'status' => 'approved',
+            'notes' => $request->notes ?? null,
+        ]);
+        
+        return redirect()->route('doctor.consultations.index')
+            ->with('message', 'Konsultasi telah disetujui.');
+    }
+
+    /**
+     * Reject the consultation.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Consultation  $consultation
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function reject(Request $request, Consultation $consultation)
+    {
+        // Check if the consultation belongs to the authenticated doctor
+        if ($consultation->doctor_id !== Auth::user()->doctor->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $request->validate([
+            'notes' => 'nullable|string|max:255',
+        ]);
+        
+        $consultation->update([
+            'status' => 'rejected',
+            'notes' => $request->notes ?? null,
+        ]);
+        
+        return redirect()->route('doctor.consultations.index')
+            ->with('message', 'Konsultasi telah ditolak.');
     }
 
     /**
@@ -104,7 +228,7 @@ class ConsultationController extends Controller
         
         // Check if consultation is of type chat and approved
         if ($consultation->type !== 'chat' || $consultation->status !== 'approved') {
-            abort(403, 'Cannot send messages to this consultation.');
+            abort(403, 'Tidak dapat mengirim pesan ke konsultasi ini.');
         }
         
         $request->validate([
@@ -136,9 +260,10 @@ class ConsultationController extends Controller
         
         $consultation->update([
             'is_completed' => true,
+            'status' => 'completed'
         ]);
         
         return redirect()->route('doctor.consultations.index')
-            ->with('message', 'Consultation marked as completed.');
+            ->with('message', 'Konsultasi telah ditandai selesai.');
     }
 }
