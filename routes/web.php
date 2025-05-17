@@ -155,6 +155,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 // Rute dokter
 Route::middleware(['auth', 'role:doctor', 'verified'])->prefix('doctor')->name('doctor.')->group(function () {
     Route::get('/dashboard', [DoctorDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/consultations/{id}/accept', [DoctorDashboardController::class, 'accept'])->name('consultations.accept');
+    Route::post('/consultations/{id}/decline', [DoctorDashboardController::class, 'decline'])->name('consultations.decline');
 
     // Konsultasi
     Route::resource('consultations', DoctorConsultationController::class);

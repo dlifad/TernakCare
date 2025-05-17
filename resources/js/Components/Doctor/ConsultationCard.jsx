@@ -1,12 +1,13 @@
 import React from "react";
 import { MessageCircle, Video, Calendar, MapPin } from "lucide-react";
+import { router } from "@inertiajs/react";
 
 export default function ConsultationCard({ consultation }) {
     const getConsultationIcon = (type) => {
         switch (type) {
             case "chat":
                 return <MessageCircle size={20} className="text-primary" />;
-            case "video":
+            case "video_call":
                 return <Video size={20} className="text-accent" />;
             case "visit":
                 return <Calendar size={20} className="text-warning" />;
@@ -19,7 +20,7 @@ export default function ConsultationCard({ consultation }) {
         switch (type) {
             case "chat":
                 return "bg-primary-light";
-            case "video":
+            case "video_call":
                 return "bg-accent-light";
             case "visit":
                 return "bg-warning bg-opacity-20";
@@ -32,7 +33,7 @@ export default function ConsultationCard({ consultation }) {
         switch (type) {
             case "chat":
                 return "Chat Consultation";
-            case "video":
+            case "video_call":
                 return "Video Consultation";
             case "visit":
                 return "Farm Visit";
@@ -48,6 +49,22 @@ export default function ConsultationCard({ consultation }) {
             year: "numeric",
             month: "long",
             day: "numeric",
+        });
+    };
+
+    const handleAccept = () => {
+        router.post(`/doctor/consultations/${consultation.id}/accept`, {}, {
+            onSuccess: () => {
+                // The page will be automatically refreshed by Inertia
+            }
+        });
+    };
+
+    const handleDecline = () => {
+        router.post(`/doctor/consultations/${consultation.id}/decline`, {}, {
+            onSuccess: () => {
+                // The page will be automatically refreshed by Inertia
+            }
         });
     };
 
@@ -73,11 +90,10 @@ export default function ConsultationCard({ consultation }) {
 
                             <div className="mt-2 text-sm text-neutral-dark">
                                 <p className="mb-1">
-                                    {getConsultationTypeLabel(
-                                        consultation.type,
-                                    )}{" "}
-                                    - {formatDate(consultation.date)} at{" "}
-                                    {consultation.time}
+                                    {getConsultationTypeLabel(consultation.type)}{" "}
+                                    {consultation.date
+                                        ? `- ${formatDate(consultation.date)} at ${consultation.time}`
+                                        : ''}
                                 </p>
                                 <p className="font-medium">
                                     Issue: {consultation.issue}
@@ -92,10 +108,16 @@ export default function ConsultationCard({ consultation }) {
                         </div>
                     </div>
                     <div className="flex space-x-3">
-                        <button className="px-4 py-2 bg-success text-white rounded-md hover:bg-success/90 transition-colors">
+                        <button 
+                            onClick={handleAccept}
+                            className="px-4 py-2 bg-success text-white rounded-md hover:bg-success/90 transition-colors"
+                        >
                             Accept
                         </button>
-                        <button className="px-4 py-2 bg-danger text-white rounded-md hover:bg-danger/90 transition-colors">
+                        <button 
+                            onClick={handleDecline}
+                            className="px-4 py-2 bg-danger text-white rounded-md hover:bg-danger/90 transition-colors"
+                        >
                             Decline
                         </button>
                     </div>
