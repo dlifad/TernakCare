@@ -142,22 +142,43 @@ class PaymentController extends Controller
     public function handlePaymentNotification(Request $request)
     {
         try {
-            $notification = $request->all();
-            // Log notifikasi untuk debugging
-            Log::info('Midtrans notification received', $notification);
+            // Catat semua data yang diterima untuk debugging
+            Log::info('Midtrans notification raw data', ['data' => $request->all()]);
+            
+            // Konfigurasi Midtrans (pastikan ini dilakukan di awal)
+            Config::$serverKey = config('midtrans.server_key');
+            Config::$isProduction = config('midtrans.is_production', false);
+            
+            // Gunakan objek Notification dari Midtrans (lebih aman)
+            $notification = new Notification();
+            
+            $orderId = $notification->order_id;
+            $transactionStatus = $notification->transaction_status;
+            $fraudStatus = $notification->fraud_status;
+            
+            Log::info('Midtrans notification processed', [
+                'order_id' => $orderId,
+                'status' => $transactionStatus,
+                'fraud' => $fraudStatus
+            ]);
 
             // Jika order_id dimulai dengan 'CONS-', maka ini adalah pembayaran konsultasi
-            if (isset($notification['order_id']) && strpos($notification['order_id'], 'CONS-') === 0) {
-                $this->midtransService->handleConsultationPaymentNotification($notification);
+            if (strpos($orderId, 'CONS-') === 0) {
+                $this->midtransService->handleConsultationPaymentNotification((array)$notification);
             } else {
                 // Proses untuk transaksi marketplace (TRX-)
-                $this->handleMarketplacePaymentNotification($notification);
+                $this->handleMarketplacePaymentNotification((array)$notification);
             }
 
+            // PENTING: Selalu kembalikan status 200 dan "OK"
             return response('OK', 200);
         } catch (\Exception $e) {
+            // Log error tapi tetap kembalikan status 200!
             Log::error('Error handling Midtrans notification: ' . $e->getMessage());
-            return response('Error', 500);
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Tetap return 200 agar Midtrans tidak retry terus menerus
+            return response('OK', 200);
         }
     }
 
