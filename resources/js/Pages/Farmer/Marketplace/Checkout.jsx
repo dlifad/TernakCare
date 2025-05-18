@@ -327,7 +327,7 @@ const Checkout = ({
         isFromCart
             ? {
                   is_from_cart: true,
-                  cart_ids: cartItems.map((item) => item.id),
+                  cart_ids: Object.values(cartItems).map((item) => item.id),
                   shipping_address: farmer?.address || "",
                   shipping_phone: farmer?.user?.phone || "",
                   payment_method: "midtrans",
@@ -350,19 +350,52 @@ const Checkout = ({
         e.preventDefault();
         setIsProcessing(true);
 
-        const paymentRoute = route("farmer.marketplace.payment");
+        // Validasi form data sebelum submit
+        if (!data.shipping_address || !data.shipping_phone) {
+            alert('Mohon lengkapi alamat dan nomor telepon pengiriman');
+            setIsProcessing(false);
+            return;
+        }
 
-        router.post(paymentRoute, data, {
+        // Debug: Log data yang akan dikirim
+        console.log('Data yang akan dikirim:', data);
+        console.log('cartItems:', cartItems);
+
+        // Tentukan route yang benar berdasarkan jenis checkout
+        let paymentRoute;
+        if (isFromCart) {
+            // Untuk checkout dari keranjang
+            paymentRoute = route("farmer.transaction.processCartOrder");
+        } else {
+            // Untuk checkout produk tunggal
+            paymentRoute = route("farmer.marketplace.payment");
+        }
+
+        console.log('Route yang digunakan:', paymentRoute);
+
+        // Kirim request dengan error handling yang lebih baik
+        post(paymentRoute, {
             preserveScroll: true,
-            onSuccess: () => {
-                // Misal tampilkan success atau arahkan ke halaman pembayaran
-            },
-            onError: () => {
-                console.log("Payload yang dikirim:", data);
-                console.error("Error details:", errors);
-                alert("Terjadi kesalahan saat memproses pembayaran.");
+            onSuccess: (page) => {
+                console.log('Success response:', page);
                 setIsProcessing(false);
+                // Jika berhasil, biasanya akan redirect otomatis
             },
+            onError: (errors) => {
+                console.log('Error response:', errors);
+                console.log('Form data saat error:', data);
+                setIsProcessing(false);
+                
+                // Tampilkan error yang lebih detail
+                if (errors.message) {
+                    alert('Error: ' + errors.message);
+                } else {
+                    alert('Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.');
+                }
+            },
+            onFinish: () => {
+                setIsProcessing(false);
+            }
         });
     };
 
@@ -382,7 +415,7 @@ const Checkout = ({
                     {isFromCart ? (
                         <>
                             <Link
-                                href={route("farmer.cart")}
+                                href={route("farmer.cart.index")}
                                 className="hover:text-primary-dark"
                             >
                                 Keranjang Belanja

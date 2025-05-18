@@ -86,4 +86,9 @@ class Transaction extends Model
         $firstItem = $this->items()->with('product.shop')->first();
         return $firstItem ? $firstItem->product->shop->name : null;
     }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

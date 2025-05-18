@@ -63,8 +63,12 @@ export default function PaymentPage(props) {
   
   // Format harga dengan pemisah ribuan
   const formatPrice = (price) => {
-    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const value = Number(price);
+    if (isNaN(value)) return ' 0';
+    return ' ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
+
+
   
   // Menangani klik tombol Bayar Sekarang
   const handlePayment = () => {
@@ -143,7 +147,7 @@ export default function PaymentPage(props) {
             
             <div className="mb-4">
               <div className="font-medium text-gray-700">Item</div>
-              <div className="text-gray-900">{product.name} (x{quantity})</div>
+              <div className="text-gray-900">{product?.name ?? 'Produk tidak ditemukan'} (x{quantity})</div>
             </div>
             
             <div className="mb-6">

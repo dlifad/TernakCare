@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Models\CartItem;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Midtrans\Snap;
+use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
 
 class TransactionController extends Controller
@@ -39,6 +41,8 @@ class TransactionController extends Controller
     public function processCartOrder(Request $request)
     {
         $request->validate([
+            'cart_ids' => 'required|array',
+            'cart_ids.*' => 'exists:cart_items,id',
             'shipping_address' => 'required|string',
             'shipping_phone' => 'required|string',
             'payment_method' => 'required|string',
@@ -48,25 +52,32 @@ class TransactionController extends Controller
         try {
             return DB::transaction(function () use ($request) {
                 $farmer = Auth::user()->farmer;
-                $cartItems = Cart::with('product.shop')
-                    ->where('farmer_id', $farmer->id)
+
+                $cartItems = CartItem::whereIn('id', $request->cart_ids)
+                    ->with(['product.shop', 'cart'])
                     ->get();
 
-                if ($cartItems->isEmpty()) {
-                    return back()->with('error', 'Keranjang belanja kosong.');
+                foreach ($cartItems as $item) {
+                    if ($item->cart->farmer_id !== $farmer->id) {
+                        throw new \Exception('Anda tidak memiliki akses ke item ini.');
+                    }
                 }
 
-                // Group cart items by shop
-                $itemsByShop = $cartItems->groupBy('product.shop_id');
+                if ($cartItems->isEmpty()) {
+                    throw new \Exception('Keranjang belanja kosong.');
+                }
 
+                $itemsByShop = $cartItems->groupBy('product.shop_id');
                 $transactions = [];
 
-                // Create transaction for each shop
                 foreach ($itemsByShop as $shopId => $items) {
-                    $totalAmount = $items->sum(function ($item) {
-                        return $item->product->price * $item->quantity;
-                    });
+                    foreach ($items as $item) {
+                        if ($item->product->stock < $item->quantity) {
+                            throw new \Exception("Stok '{$item->product->name}' tidak mencukupi.");
+                        }
+                    }
 
+                    $totalAmount = $items->sum(fn($item) => $item->product->price * $item->quantity);
                     $transactionCode = 'TRX-' . strtoupper(Str::random(8));
 
                     $transaction = Transaction::create([
@@ -80,13 +91,7 @@ class TransactionController extends Controller
                         'notes' => $request->notes,
                     ]);
 
-                    // Create transaction items
                     foreach ($items as $item) {
-                        // Check stock availability
-                        if ($item->product->stock < $item->quantity) {
-                            throw new \Exception("Stok '{$item->product->name}' tidak mencukupi.");
-                        }
-
                         TransactionItem::create([
                             'transaction_id' => $transaction->id,
                             'product_id' => $item->product_id,
@@ -95,53 +100,27 @@ class TransactionController extends Controller
                             'subtotal' => $item->product->price * $item->quantity,
                         ]);
 
-                        // Decrement product stock
                         $item->product->decrement('stock', $item->quantity);
                     }
 
                     $transactions[] = $transaction;
                 }
 
-                // Generate Midtrans token for the first transaction
-                // Note: In real world scenario, you might want to handle multiple transactions differently
+                // Hapus cart items
+                CartItem::whereIn('id', $request->cart_ids)->delete();
+
+                // Redirect ke halaman konfirmasi pembayaran (transaksi pertama saja)
                 $mainTransaction = $transactions[0];
-                $mainTransaction->load('items.product');
 
-                $midtransParams = [
-                    'transaction_details' => [
-                        'order_id' => $mainTransaction->transaction_code,
-                        'gross_amount' => $mainTransaction->total_amount,
-                    ],
-                    'customer_details' => [
-                        'first_name' => $farmer->user->name,
-                        'email' => $farmer->user->email,
-                        'phone' => $request->shipping_phone,
-                    ],
-                    'item_details' => $mainTransaction->items->map(function ($item) {
-                        return [
-                            'id' => $item->product_id,
-                            'price' => $item->price,
-                            'quantity' => $item->quantity,
-                            'name' => substr($item->product->name, 0, 50),
-                        ];
-                    })->toArray(),
-                ];
-
-                $snapToken = Snap::getSnapToken($midtransParams);
-
-                // Clear the cart after successful transaction
-                Cart::where('farmer_id', $farmer->id)->delete();
-
-                return redirect()->route('farmer.payment.confirmation', $mainTransaction->id)
-                    ->with('success', 'Pesanan berhasil dibuat.')
-                    ->with('snap_token', $snapToken)
-                    ->with('transaction', $mainTransaction)
-                    ->with('has_multiple_transactions', count($transactions) > 1);
+                return Inertia::location(route('farmer.transaction.paymentConfirmation', $mainTransaction->id));
             });
         } catch (\Exception $e) {
+            Log::error('Error processing cart order: ' . $e->getMessage());
             return back()->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
     }
+
+
 
     /**
      * Display the payment confirmation page.
@@ -156,13 +135,22 @@ class TransactionController extends Controller
         }
 
         $transaction->load(['items.product', 'shop.bankAccount', 'farmer.user']);
+        
 
-        return Inertia::render('Farmer/Marketplace/PaymentConfirmation', [
+        return Inertia::render('Farmer/Marketplace/PaymentPage', [
             'transaction' => $transaction,
             'snapToken' => session('snap_token'),
             'hasMultipleTransactions' => session('has_multiple_transactions', false),
+            'items' => $transaction->items, // kirim semua item
+            'total' => $transaction->total_amount,
+            'orderId' => $transaction->order_id,
+            'transaction_id' => $transaction->id,
+            'client_key' => config('midtrans.client_key'),
         ]);
+
+
     }
+
 
     /**
      * Process payment confirmation

@@ -184,14 +184,27 @@ class CartController extends Controller
         $cart = Cart::where('farmer_id', $farmer->id)->first();
 
         if (!$cart) {
-            return redirect()->route('farmer.marketplace')->with('error', 'Keranjang belanja Anda kosong.');
+            return redirect()->route('farmer.marketplace')
+                ->with('error', 'Keranjang belanja Anda kosong.');
         }
 
-        // Ambil item dari cart tersebut
-        $cartItems = $cart->items()->with(['product.shop.user'])->get();
+        // FIX: Ambil cart items dengan relasi yang benar
+        $cartItems = $cart->items()->with([
+            'product.shop.user', 
+            'product.images'
+        ])->get();
 
         if ($cartItems->isEmpty()) {
-            return redirect()->route('farmer.marketplace')->with('error', 'Keranjang belanja Anda kosong.');
+            return redirect()->route('farmer.marketplace')
+                ->with('error', 'Keranjang belanja Anda kosong.');
+        }
+
+        // Validasi stok untuk setiap item
+        foreach ($cartItems as $item) {
+            if ($item->product->stock < $item->quantity) {
+                return redirect()->route('farmer.cart.index')
+                    ->with('error', "Stok '{$item->product->name}' tidak mencukupi. Tersedia: {$item->product->stock}, diminta: {$item->quantity}");
+            }
         }
 
         // Hitung total
@@ -201,9 +214,36 @@ class CartController extends Controller
 
         return Inertia::render('Farmer/Marketplace/Checkout', [
             'isFromCart' => true,
-            'cartItems' => $cartItems,
+            'cartItems' => $cartItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'price' => $item->product->price,
+                        'image' => $item->product->image,
+                        'stock' => $item->product->stock,
+                        'shop' => [
+                            'id' => $item->product->shop->id,
+                            'shop_name' => $item->product->shop->shop_name,
+                            'user' => [
+                                'profile_photo_path' => $item->product->shop->user->profile_photo_path ?? null
+                            ]
+                        ]
+                    ]
+                ];
+            }),
             'cartTotal' => $cartTotal,
-            'farmer' => $farmer,
+            'farmer' => [
+                'id' => $farmer->id,
+                'address' => $farmer->address,
+                'user' => [
+                    'name' => $farmer->user->name,
+                    'email' => $farmer->user->email,
+                    'phone' => $farmer->user->phone
+                ]
+            ],
         ]);
     }
 }
