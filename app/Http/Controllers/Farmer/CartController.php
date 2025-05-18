@@ -15,6 +15,7 @@ class CartController extends Controller
 {
     /**
      * Display the cart contents.
+     * Lokasi file: app/Http/Controllers/Farmer/CartController.php
      *
      * @return \Inertia\Response
      */
@@ -35,7 +36,6 @@ class CartController extends Controller
         });
 
         // Render page with data
-        // Note: cartCount will be provided by middleware and doesn't need to be passed here
         return Inertia::render('Farmer/Marketplace/Cart', [
             'cartItems' => $cartItems,
             'itemsByShop' => $itemsByShop,
@@ -45,6 +45,7 @@ class CartController extends Controller
 
     /**
      * Add a product to the cart.
+     * Lokasi file: app/Http/Controllers/Farmer/CartController.php
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -59,10 +60,12 @@ class CartController extends Controller
         $farmerId = Auth::user()->farmer->id;
         $product = Product::findOrFail($request->product_id);
 
+        // Cek ketersediaan produk
         if (!$product->is_active) {
             return back()->with('error', 'Produk tidak tersedia.');
         }
 
+        // Cek stok produk
         if ($product->stock < $request->quantity) {
             return back()->with('error', 'Stok produk tidak mencukupi.');
         }
@@ -76,14 +79,17 @@ class CartController extends Controller
         $cartItem = $cart->items()->where('product_id', $product->id)->first();
 
         if ($cartItem) {
+            // Update jumlah jika produk sudah ada di keranjang
             $newQuantity = $cartItem->quantity + $request->quantity;
 
+            // Validasi stok lagi setelah penambahan
             if ($newQuantity > $product->stock) {
                 return back()->with('error', 'Total kuantitas melebihi stok yang tersedia.');
             }
 
             $cartItem->update(['quantity' => $newQuantity]);
         } else {
+            // Tambah item baru ke keranjang
             $cart->items()->create([
                 'product_id' => $product->id,
                 'quantity' => $request->quantity,
@@ -95,6 +101,7 @@ class CartController extends Controller
 
     /**
      * Update cart item quantity.
+     * Lokasi file: app/Http/Controllers/Farmer/CartController.php
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
@@ -118,11 +125,12 @@ class CartController extends Controller
         
         $product = Product::findOrFail($cartItem->product_id);
 
-        // Check if stock is sufficient
+        // Cek ketersediaan stok
         if ($product->stock < $request->quantity) {
             return back()->with('error', 'Stok produk tidak mencukupi.');
         }
 
+        // Update jumlah produk di keranjang
         $cartItem->update([
             'quantity' => $request->quantity
         ]);
@@ -132,6 +140,7 @@ class CartController extends Controller
 
     /**
      * Remove an item from the cart.
+     * Lokasi file: app/Http/Controllers/Farmer/CartController.php
      *
      * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
@@ -148,6 +157,7 @@ class CartController extends Controller
             ->where('id', $id)
             ->firstOrFail();
         
+        // Hapus item dari keranjang
         $cartItem->delete();
 
         return back()->with('success', 'Produk berhasil dihapus dari keranjang.');
@@ -155,6 +165,7 @@ class CartController extends Controller
 
     /**
      * Clear all items from the cart.
+     * Lokasi file: app/Http/Controllers/Farmer/CartController.php
      *
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -163,7 +174,7 @@ class CartController extends Controller
         $cart = Cart::where('farmer_id', Auth::user()->farmer->id)->first();
         
         if ($cart) {
-            // Delete all cart items
+            // Hapus semua item dari keranjang
             $cart->items()->delete();
         }
 
@@ -171,33 +182,28 @@ class CartController extends Controller
     }
 
     /**
-     * Proceed to checkout.
+     * Proceed to checkout from cart.
+     * Lokasi file: app/Http/Controllers/Farmer/CartController.php
      *
-     * @return \Inertia\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function checkout()
+    public function checkout(Request $request)
     {
-        $user = Auth::user();
-        $farmer = $user->farmer;
+        $farmer = Auth::user()->farmer;
 
-        // Ambil cart berdasarkan farmer
+        // Ambil keranjang petani
         $cart = Cart::where('farmer_id', $farmer->id)->first();
 
-        if (!$cart) {
+        if (!$cart || $cart->items()->count() === 0) {
             return redirect()->route('farmer.marketplace')
                 ->with('error', 'Keranjang belanja Anda kosong.');
         }
 
-        // FIX: Ambil cart items dengan relasi yang benar
+        // Dapatkan item yang akan di-checkout (semua atau yang dipilih)
         $cartItems = $cart->items()->with([
             'product.shop.user', 
             'product.images'
         ])->get();
-
-        if ($cartItems->isEmpty()) {
-            return redirect()->route('farmer.marketplace')
-                ->with('error', 'Keranjang belanja Anda kosong.');
-        }
 
         // Validasi stok untuk setiap item
         foreach ($cartItems as $item) {
@@ -207,43 +213,12 @@ class CartController extends Controller
             }
         }
 
-        // Hitung total
-        $cartTotal = $cartItems->sum(function ($item) {
-            return $item->product->price * $item->quantity;
-        });
+        // Siapkan ID item yang akan di-checkout untuk diteruskan ke halaman checkout
+        $cartItemIds = $cartItems->pluck('id')->join(',');
 
-        return Inertia::render('Farmer/Marketplace/Checkout', [
-            'isFromCart' => true,
-            'cartItems' => $cartItems->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'quantity' => $item->quantity,
-                    'product' => [
-                        'id' => $item->product->id,
-                        'name' => $item->product->name,
-                        'price' => $item->product->price,
-                        'image' => $item->product->image,
-                        'stock' => $item->product->stock,
-                        'shop' => [
-                            'id' => $item->product->shop->id,
-                            'shop_name' => $item->product->shop->shop_name,
-                            'user' => [
-                                'profile_photo_path' => $item->product->shop->user->profile_photo_path ?? null
-                            ]
-                        ]
-                    ]
-                ];
-            }),
-            'cartTotal' => $cartTotal,
-            'farmer' => [
-                'id' => $farmer->id,
-                'address' => $farmer->address,
-                'user' => [
-                    'name' => $farmer->user->name,
-                    'email' => $farmer->user->email,
-                    'phone' => $farmer->user->phone
-                ]
-            ],
+        // Redirect ke halaman checkout dengan ID item yang dipilih
+        return redirect()->route('farmer.marketplace.checkout', [
+            'cart_ids' => $cartItemIds
         ]);
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Head, Link, useForm, router } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import FarmerLayout from "@/Layouts/FarmerLayout";
 
 // Helper functions
@@ -13,7 +13,7 @@ const formatPrice = (price) =>
 const getImageUrl = (image) =>
     image ? `/storage/${image}` : "/images/product-placeholder.jpg";
 
-// Local Component: ShippingForm
+// ShippingForm Component
 const ShippingForm = ({ data, onChange, errors }) => (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-lg font-medium mb-4">Informasi Pengiriman</h2>
@@ -31,7 +31,7 @@ const ShippingForm = ({ data, onChange, errors }) => (
                     rows="3"
                     value={data.shipping_address}
                     onChange={onChange}
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md"
                     required
                 />
                 {errors.shipping_address && (
@@ -54,7 +54,7 @@ const ShippingForm = ({ data, onChange, errors }) => (
                     name="shipping_phone"
                     value={data.shipping_phone}
                     onChange={onChange}
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md"
                     required
                 />
                 {errors.shipping_phone && (
@@ -77,30 +77,21 @@ const ShippingForm = ({ data, onChange, errors }) => (
                     rows="2"
                     value={data.notes}
                     onChange={onChange}
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 />
             </div>
         </div>
     </div>
 );
 
-// Fixed SingleProductSummary Component - Handles null shop safely
+// SingleProductSummary Component
 const SingleProductSummary = ({ product, quantity, total, processing }) => {
-    // Fallback untuk nama toko
     const getShopName = () => product?.shop?.shop_name || "TernakCare";
-
-    // Inisial toko
     const getShopInitial = () => getShopName().charAt(0);
-
-    // URL gambar toko atau produk
     const getShopPhoto = () => product?.shop?.user?.profile_photo_path;
-    const getProductImage = () =>
-        product?.image ? `/storage/${product.image}` : "/default.jpg";
-
-    // Harga produk (fallback ke 0 jika tidak ada)
+    const getProductImage = () => getImageUrl(product?.image);
     const getProductPrice = () => product?.price || 0;
 
-    // Cegah render jika data belum siap
     if (!product) return null;
 
     return (
@@ -141,7 +132,7 @@ const SingleProductSummary = ({ product, quantity, total, processing }) => {
                 </div>
                 <div className="ml-4 flex-1">
                     <h4 className="text-sm font-medium text-gray-900">
-                        {getShopName()}
+                        {product.name}
                     </h4>
                     <p className="mt-1 text-sm text-gray-500">
                         Jumlah: {quantity}
@@ -167,7 +158,7 @@ const SingleProductSummary = ({ product, quantity, total, processing }) => {
                     <span className="text-base font-medium text-gray-900">
                         Total
                     </span>
-                    <span className="text-base font-medium text-primary-dark">
+                    <span className="text-base font-medium text-green-600">
                         {formatPrice(total)}
                     </span>
                 </div>
@@ -177,7 +168,7 @@ const SingleProductSummary = ({ product, quantity, total, processing }) => {
                 <button
                     type="submit"
                     disabled={processing}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-dark hover:bg-primary-darker focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                     {processing ? (
                         <span className="flex items-center">
@@ -212,7 +203,7 @@ const SingleProductSummary = ({ product, quantity, total, processing }) => {
     );
 };
 
-// Fixed CartItemsSummary - Handles null shops safely
+// CartItemsSummary Component
 const CartItemsSummary = ({ cartItems, total, processing }) => (
     <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
         <h2 className="text-lg font-medium mb-4">Ringkasan Pesanan</h2>
@@ -242,8 +233,7 @@ const CartItemsSummary = ({ cartItems, total, processing }) => (
                                 {formatPrice(item.product.price)} / item
                             </p>
                             <p className="mt-1 text-sm text-gray-500">
-                                Toko:{" "}
-                                {item.product?.shop?.shop_name || "TernakCare"}
+                                Toko: {item.product?.shop?.shop_name || "TernakCare"}
                             </p>
                         </div>
                     </div>
@@ -261,10 +251,8 @@ const CartItemsSummary = ({ cartItems, total, processing }) => (
                 <span className="font-medium">Gratis</span>
             </div>
             <div className="pt-2 border-t border-gray-200 flex justify-between">
-                <span className="text-base font-medium text-gray-900">
-                    Total
-                </span>
-                <span className="text-base font-medium text-primary-dark">
+                <span className="text-base font-medium text-gray-900">Total</span>
+                <span className="text-base font-medium text-green-600">
                     {formatPrice(total)}
                 </span>
             </div>
@@ -274,7 +262,7 @@ const CartItemsSummary = ({ cartItems, total, processing }) => (
             <button
                 type="submit"
                 disabled={processing}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-dark hover:bg-primary-darker focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
                 {processing ? (
                     <span className="flex items-center">
@@ -308,7 +296,7 @@ const CartItemsSummary = ({ cartItems, total, processing }) => (
     </div>
 );
 
-// Modified Checkout Component that handles both single product and cart checkouts
+// Main Checkout Component
 const Checkout = ({
     product = null,
     quantity = 0,
@@ -318,19 +306,14 @@ const Checkout = ({
     cartTotal = 0,
     isFromCart = false,
 }) => {
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [showPaymentInstructions, setShowPaymentInstructions] =
-        useState(false);
-
-    // Initialize form data based on checkout type (cart or single product)
+    // Initialize form data based on checkout type
     const { data, setData, post, processing, errors } = useForm(
         isFromCart
             ? {
                   is_from_cart: true,
-                  cart_ids: Object.values(cartItems).map((item) => item.id),
+                  cart_ids: cartItems.map((item) => item.id),
                   shipping_address: farmer?.address || "",
                   shipping_phone: farmer?.user?.phone || "",
-                  payment_method: "midtrans",
                   notes: "",
               }
             : {
@@ -339,63 +322,39 @@ const Checkout = ({
                   quantity,
                   shipping_address: farmer?.address || "",
                   shipping_phone: farmer?.user?.phone || "",
-                  payment_method: "midtrans",
                   notes: "",
-              },
+              }
     );
 
     const handleInputChange = (e) => setData(e.target.name, e.target.value);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setIsProcessing(true);
 
-        // Validasi form data sebelum submit
+        // Validate required fields
         if (!data.shipping_address || !data.shipping_phone) {
-            alert('Mohon lengkapi alamat dan nomor telepon pengiriman');
-            setIsProcessing(false);
+            alert("Mohon lengkapi alamat dan nomor telepon pengiriman");
             return;
         }
 
-        // Debug: Log data yang akan dikirim
-        console.log('Data yang akan dikirim:', data);
-        console.log('cartItems:', cartItems);
+        // Process checkout
+        const routeName = isFromCart 
+            ? "farmer.transaction.processCartOrder"
+            : "farmer.marketplace.checkout.process";
 
-        // Tentukan route yang benar berdasarkan jenis checkout
-        let paymentRoute;
-        if (isFromCart) {
-            // Untuk checkout dari keranjang
-            paymentRoute = route("farmer.transaction.processCartOrder");
-        } else {
-            // Untuk checkout produk tunggal
-            paymentRoute = route("farmer.marketplace.payment");
-        }
-
-        console.log('Route yang digunakan:', paymentRoute);
-
-        // Kirim request dengan error handling yang lebih baik
-        post(paymentRoute, {
+        post(route(routeName), {
             preserveScroll: true,
-            onSuccess: (page) => {
-                console.log('Success response:', page);
-                setIsProcessing(false);
-                // Jika berhasil, biasanya akan redirect otomatis
+            onSuccess: () => {
+                // Success will be handled by controller redirect
             },
             onError: (errors) => {
-                console.log('Error response:', errors);
-                console.log('Form data saat error:', data);
-                setIsProcessing(false);
-                
-                // Tampilkan error yang lebih detail
-                if (errors.message) {
-                    alert('Error: ' + errors.message);
+                console.log("Error response:", errors);
+                if (errors.checkout_error) {
+                    alert("Error: " + errors.checkout_error);
                 } else {
-                    alert('Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.');
+                    alert("Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
                 }
             },
-            onFinish: () => {
-                setIsProcessing(false);
-            }
         });
     };
 
@@ -407,7 +366,7 @@ const Checkout = ({
                 <nav className="flex text-sm text-gray-500 mb-6">
                     <Link
                         href={route("farmer.marketplace")}
-                        className="hover:text-primary-dark"
+                        className="hover:text-green-600"
                     >
                         Marketplace
                     </Link>
@@ -416,7 +375,7 @@ const Checkout = ({
                         <>
                             <Link
                                 href={route("farmer.cart.index")}
-                                className="hover:text-primary-dark"
+                                className="hover:text-green-600"
                             >
                                 Keranjang Belanja
                             </Link>
@@ -424,98 +383,40 @@ const Checkout = ({
                         </>
                     ) : product ? (
                         <>
-                            <Link
-                                href={route(
-                                    "farmer.marketplace.product",
-                                    product.id,
-                                )}
-                                className="hover:text-primary-dark"
-                            >
-                                {product.name}
-                            </Link>
+                            <span className="text-gray-700">{product.name}</span>
                             <span className="mx-2">/</span>
                         </>
                     ) : null}
                     <span className="text-gray-700 font-medium">Checkout</span>
                 </nav>
 
-                <h1 className="text-2xl font-bold text-gray-800 mb-6">
-                    Checkout
-                </h1>
+                <h1 className="text-2xl font-bold text-gray-800 mb-6">Checkout</h1>
 
-                {showPaymentInstructions ? (
-                    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-8 w-8 text-green-600"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M5 13l4 4L19 7"
-                                    />
-                                </svg>
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-2">
-                                Pesanan Berhasil Dibuat!
-                            </h2>
-                            <p className="text-gray-600">
-                                Silakan lakukan pembayaran untuk menyelesaikan
-                                pesanan Anda.
-                            </p>
-                        </div>
-
-                        <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link
-                                href={route("farmer.activity")}
-                                className="btn-primary"
-                            >
-                                Lihat Riwayat Pesanan
-                            </Link>
-                            <Link
-                                href={route("farmer.marketplace")}
-                                className="btn-secondary"
-                            >
-                                Kembali ke Marketplace
-                            </Link>
-                        </div>
+                <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6">
+                    <div className="lg:w-2/3">
+                        <ShippingForm
+                            data={data}
+                            onChange={handleInputChange}
+                            errors={errors}
+                        />
                     </div>
-                ) : (
-                    <form
-                        onSubmit={handleSubmit}
-                        className="flex flex-col lg:flex-row gap-6"
-                    >
-                        <div className="lg:w-2/3">
-                            <ShippingForm
-                                data={data}
-                                onChange={handleInputChange}
-                                errors={errors}
+                    <div className="lg:w-1/3">
+                        {isFromCart ? (
+                            <CartItemsSummary
+                                cartItems={cartItems}
+                                total={cartTotal}
+                                processing={processing}
                             />
-                        </div>
-                        <div className="lg:w-1/3">
-                            {isFromCart ? (
-                                <CartItemsSummary
-                                    cartItems={cartItems}
-                                    total={cartTotal}
-                                    processing={processing || isProcessing}
-                                />
-                            ) : (
-                                <SingleProductSummary
-                                    product={product}
-                                    quantity={quantity}
-                                    total={total}
-                                    processing={processing || isProcessing}
-                                />
-                            )}
-                        </div>
-                    </form>
-                )}
+                        ) : (
+                            <SingleProductSummary
+                                product={product}
+                                quantity={quantity}
+                                total={total}
+                                processing={processing}
+                            />
+                        )}
+                    </div>
+                </form>
             </div>
         </FarmerLayout>
     );

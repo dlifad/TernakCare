@@ -251,36 +251,78 @@ Route::middleware(['auth', 'role:farmer', 'verified'])->prefix('farmer')->name('
         Route::get('/history', [ConsultationController::class, 'history'])->name('history');
     });
 
-    // Marketplace
-    Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
-    Route::get('/marketplace/product/{id}', [MarketplaceController::class, 'showProduct'])->name('marketplace.product');
-    Route::get('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
-    Route::post('/marketplace/process-order', [MarketplaceController::class, 'processOrder'])->name('marketplace.process-order');
+//     // Marketplace
+//     Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
+//     Route::get('/marketplace/product/{id}', [MarketplaceController::class, 'showProduct'])->name('marketplace.product');
+//     Route::get('/marketplace/checkout', [MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
+//     Route::post('/marketplace/process-order', [MarketplaceController::class, 'processOrder'])->name('marketplace.process-order');
 
-       // Transaction routes
-    Route::prefix('transaction')->name('transaction.')->group(function () {
-        Route::post('/process-cart-order', [FarmerTransactionController::class, 'processCartOrder'])->name('processCartOrder');
-        Route::get('/payment-confirmation/{transaction}', [FarmerTransactionController::class, 'paymentConfirmation'])->name('paymentConfirmation');
-        Route::post('/payment-confirmation', [FarmerTransactionController::class, 'processPaymentConfirmation'])->name('processPaymentConfirmation');
-    });
+//        // Transaction routes
+//     Route::prefix('transaction')->name('transaction.')->group(function () {
+//         Route::post('/process-cart-order', [FarmerTransactionController::class, 'processCartOrder'])->name('processCartOrder');
+//         Route::get('/payment-confirmation/{transaction}', [FarmerTransactionController::class, 'paymentConfirmation'])->name('paymentConfirmation');
+//         Route::post('/payment-confirmation', [FarmerTransactionController::class, 'processPaymentConfirmation'])->name('processPaymentConfirmation');
+//     });
 
-    // Cart Routes
-    Route::get('/cart', [App\Http\Controllers\Farmer\CartController::class, 'index'])->name('cart.index');
-    Route::post('/cart/process-payment', [App\Http\Controllers\Farmer\CartController::class, 'processPayment'])->name('cart.process_payment');
+//     // Cart Routes
+//     Route::get('/cart', [App\Http\Controllers\Farmer\CartController::class, 'index'])->name('cart.index');
+//     Route::post('/cart/process-payment', [App\Http\Controllers\Farmer\CartController::class, 'processPayment'])->name('cart.process_payment');
 
-    Route::post('/cart/add', [App\Http\Controllers\Farmer\CartController::class, 'add'])->name('cart.add');
-    Route::put('/cart/{id}', [App\Http\Controllers\Farmer\CartController::class, 'update'])->name('cart.update');
-    Route::delete('/cart/{id}', [App\Http\Controllers\Farmer\CartController::class, 'remove'])->name('cart.remove');
-    Route::delete('/cart', [App\Http\Controllers\Farmer\CartController::class, 'clear'])->name('cart.clear');
-    Route::get('/cart/checkout', [App\Http\Controllers\Farmer\CartController::class, 'checkout'])->name('cart.checkout');
-    Route::post('/cart/checkout/process', [FarmerTransactionController::class, 'processCartOrder'])->name('cart.checkout.process');
-    Route::get('/cart/checkout/payment', [FarmerTransactionController::class, 'payment'])->name('cart.checkout.payment');   
+//     Route::post('/cart/add', [App\Http\Controllers\Farmer\CartController::class, 'add'])->name('cart.add');
+//     Route::put('/cart/{id}', [App\Http\Controllers\Farmer\CartController::class, 'update'])->name('cart.update');
+//     Route::delete('/cart/{id}', [App\Http\Controllers\Farmer\CartController::class, 'remove'])->name('cart.remove');
+//     Route::delete('/cart', [App\Http\Controllers\Farmer\CartController::class, 'clear'])->name('cart.clear');
+//     Route::get('/cart/checkout', [App\Http\Controllers\Farmer\CartController::class, 'checkout'])->name('cart.checkout');
+//     Route::post('/cart/checkout/process', [FarmerTransactionController::class, 'processCartOrder'])->name('cart.checkout.process');
+//     Route::get('/cart/checkout/payment', [FarmerTransactionController::class, 'payment'])->name('cart.checkout.payment');   
     
 
 
-   // Route::get('/payment-confirmation/{transaction}', [MarketplaceController::class, 'paymentConfirmation'])->name('payment.confirmation');
-    Route::post('/process-payment-confirmation', [MarketplaceController::class, 'processPaymentConfirmation'])->name('payment.process');
+//    // Route::get('/payment-confirmation/{transaction}', [MarketplaceController::class, 'paymentConfirmation'])->name('payment.confirmation');
+//     Route::post('/process-payment-confirmation', [MarketplaceController::class, 'processPaymentConfirmation'])->name('payment.process');
+        
+    Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace');
+    Route::get('/marketplace/product/{id}', [MarketplaceController::class, 'showProduct'])->name('marketplace.product');
 
+    Route::prefix('marketplace')->name('marketplace.')->group(function () {
+        // Route untuk menampilkan halaman checkout
+        Route::get('/checkout', [App\Http\Controllers\Farmer\CheckoutController::class, 'show'])
+            ->name('checkout');
+            
+        // Route untuk memproses checkout (produk tunggal)
+        Route::post('/checkout/process', [App\Http\Controllers\Farmer\CheckoutController::class, 'process'])
+            ->name('checkout.process');
+            
+        // Route untuk halaman pembayaran
+        Route::get('/payment', function () {
+            return redirect()->route('farmer.marketplace.checkout');
+        })->name('payment');
+        
+        // Route untuk halaman sukses pembayaran
+        Route::get('/payment/success', [App\Http\Controllers\Farmer\CheckoutController::class, 'paymentSuccess'])
+            ->name('payment.success');
+    });
+    
+    // Transaction routes (untuk checkout dari cart)
+    Route::prefix('transaction')->name('transaction.')->group(function () {
+        // Route untuk memproses checkout dari cart
+        Route::post('/process-cart-order', [App\Http\Controllers\Farmer\CheckoutController::class, 'process'])
+            ->name('processCartOrder');
+    });
+    
+    // Cart routes (jika belum ada)
+    Route::prefix('cart')->name('cart.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Farmer\CartController::class, 'index'])
+            ->name('index');
+        Route::post('/add', [App\Http\Controllers\Farmer\CartController::class, 'add'])
+            ->name('add');
+        Route::put('/{item}', [App\Http\Controllers\Farmer\CartController::class, 'update'])
+            ->name('update');
+        Route::delete('/{item}', [App\Http\Controllers\Farmer\CartController::class, 'remove'])
+            ->name('remove');
+        Route::get('/checkout', [App\Http\Controllers\Farmer\CartController::class, 'checkout'])
+            ->name('checkout');
+    });
 
     // Artikel
     Route::get('/artikel', [App\Http\Controllers\Farmer\ArticleController::class, 'index'])->name('articles');

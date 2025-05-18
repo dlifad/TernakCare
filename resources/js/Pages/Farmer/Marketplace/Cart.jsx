@@ -45,9 +45,9 @@ export default function CartPage({ cartItems, itemsByShop, subtotal }) {
         }
     };
 
-    // Fungsi Checkout yang diperbaiki untuk menggunakan rute yang benar
+    // Updated to use the correct checkout route as defined in CartController
     const proceedToCheckout = () => {
-        // Menggunakan route farmer.cart.checkout sesuai dengan definisi di web.php
+        // Using cart.checkout route that calls CartController@checkout
         router.get(route("farmer.cart.checkout"));
     };
 
@@ -239,6 +239,7 @@ export default function CartPage({ cartItems, itemsByShop, subtotal }) {
                     <button
                         onClick={proceedToCheckout}
                         className="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-lg font-medium transition duration-200"
+                        disabled={cartItems.length === 0}
                     >
                         Checkout
                     </button>
@@ -246,6 +247,7 @@ export default function CartPage({ cartItems, itemsByShop, subtotal }) {
                     <button
                         onClick={clearCart}
                         className="w-full border border-red-500 text-red-500 hover:bg-red-50 py-2 rounded-lg font-medium transition duration-200"
+                        disabled={cartItems.length === 0}
                     >
                         Kosongkan Keranjang
                     </button>
