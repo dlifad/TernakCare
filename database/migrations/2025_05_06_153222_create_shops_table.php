@@ -13,10 +13,7 @@ return new class extends Migration
     {
         Schema::create('shops', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                  ->constrained()
-                  ->onDelete('cascade');
-
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('shop_name');
             $table->string('shop_phone');
             $table->text('shop_address');
@@ -24,17 +21,12 @@ return new class extends Migration
             $table->string('business_license');
             $table->string('shop_type');
             $table->string('owner_id_number');
-
-            $table->enum('status', ['pending', 'verified', 'rejected'])
-                  ->default('pending');
-
+            $table->enum('status', ['pending', 'verified', 'rejected'])->default('pending');
             $table->string('shop_logo')->nullable();
             $table->string('shop_banner')->nullable();
-
             $table->json('delivery_options')->nullable();
             $table->json('payment_methods')->nullable();
             $table->json('operating_hours')->nullable();
-
             $table->timestamps();
         });
     }
