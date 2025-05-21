@@ -15,6 +15,10 @@ class Cart extends Model
         'quantity',
     ];
 
+    protected $casts = [
+        'farmer_id' => 'integer',
+    ];
+
     /**
      * Get the farmer that owns the cart item.
      */

@@ -33,7 +33,9 @@ class Transaction extends Model
      * @var array
      */
     protected $casts = [
-        'total_amount' => 'decimal:2',
+        'total_amount' => 'float',
+        'farmer_id' => 'integer',
+        'shop_id' => 'integer',
     ];
 
     /**

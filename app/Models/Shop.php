@@ -27,10 +27,12 @@ class Shop extends Model
 
     // Jika delivery_options, payment_methods, dan operating_hours disimpan sebagai JSON
     protected $casts = [
+        'id' => 'integer',
         'delivery_options' => 'array',
         'payment_methods' => 'array',
         'operating_hours' => 'array'
     ];
+
 
     // Relasi ke User
     public function user()

@@ -30,11 +30,14 @@ class Consultation extends Model
     ];
 
     protected $casts = [
+        'doctor_id' => 'integer',
+        'id' => 'integer',
         'schedule' => 'datetime',
         'is_paid' => 'boolean',
         'is_completed' => 'boolean',
         'payment_details' => 'array',
     ];
+
 
     /**
      * Mendapatkan peternak yang melakukan konsultasi

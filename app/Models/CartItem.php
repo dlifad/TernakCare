@@ -15,6 +15,11 @@ class CartItem extends Model
         'quantity',
         'status',
     ];
+
+    protected $casts = [
+        'quantity' => 'integer',
+        'farmer_id' => 'integer',
+    ];
     
     public function farmer()
     {

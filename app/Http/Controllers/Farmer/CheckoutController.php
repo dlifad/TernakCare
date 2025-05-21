@@ -20,17 +20,12 @@ class CheckoutController extends Controller
 {
     public function __construct()
     {
-        // Set konfigurasi Midtrans
         Config::$serverKey = config('midtrans.server_key');
         Config::$isProduction = config('midtrans.is_production', false);
         Config::$isSanitized = true;
         Config::$is3ds = true;
     }
 
-    /**
-     * Tampilkan halaman checkout
-     * Lokasi file: app/Http/Controllers/Farmer/CheckoutController.php
-     */
     public function show(Request $request)
     {
         $farmer = Auth::user()->farmer;

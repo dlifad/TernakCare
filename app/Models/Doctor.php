@@ -36,6 +36,7 @@ class Doctor extends Model
     ];
 
     protected $casts = [
+        'id' => 'integer',
         'chat_service_active' => 'boolean',
         'video_call_service_active' => 'boolean',
         'home_visit_service_active' => 'boolean',
@@ -43,6 +44,7 @@ class Doctor extends Model
         'video_call_service_fee' => 'integer',
         'home_visit_service_fee' => 'integer',
     ];
+
 
     /**
      * Get the user that owns the doctor profile.

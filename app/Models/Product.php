@@ -21,7 +21,7 @@ class Product extends Model
      */
     protected $fillable = [
         'shop_id',
-        'name', 
+        'name',
         'description',
         'price',
         'stock',
@@ -37,7 +37,7 @@ class Product extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'price' => 'decimal:2',
+        'price' => 'float',
         'stock' => 'integer',
         'is_active' => 'boolean',
         'featured' => 'boolean',

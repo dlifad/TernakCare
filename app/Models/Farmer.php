@@ -22,6 +22,12 @@ class Farmer extends Model
         'bio',
     ];
 
+    protected $casts = [
+        'id' => 'integer',
+    ];
+
+
+
     /**
      * Get the user that owns the farmer profile
      */
