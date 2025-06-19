@@ -226,7 +226,7 @@ const PaymentPage = ({ snapToken, transaction, orderId, total, client_key }) => 
                 {/* Breadcrumb */}
                 <nav className="flex text-sm text-gray-500 mb-6">
                     <Link
-                        href={route('farmer.marketplace')}
+                        href={route('farmer.marketplace.index')}
                         className="hover:text-green-600"
                     >
                         Marketplace

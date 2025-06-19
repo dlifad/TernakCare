@@ -40,11 +40,11 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |       ActivityController.php
 |   |   |       ArticleController.php
 |   |   |       CartController.php
+|   |   |       CheckoutController.php
 |   |   |       ConsultationController.php
 |   |   |       HomeController.php
 |   |   |       MarketplaceController.php
 |   |   |       ProfileController.php
-|   |   |       TransactionController.php
 |   |   |       
 |   |   \---Shop
 |   |           DashboardController.php
@@ -103,7 +103,6 @@ Folder PATH listing for volume DATA
 Volume serial number is 1026-415E
 D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\DATABASE
 |   .gitignore
-|   database.sqlite
 |   
 +---factories
 |       UserFactory.php
@@ -263,9 +262,11 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |   |   |   
 |   |   |   +---Consultations
 |   |   |   |       Index.jsx
+|   |   |   |       Show.jsx
 |   |   |   |       
 |   |   |   +---History
 |   |   |   |       Index.jsx
+|   |   |   |       Show.jsx
 |   |   |   |       
 |   |   |   \---Profile
 |   |   |           Index.jsx
@@ -312,6 +313,7 @@ D:\INFORMATIKA - UPNYK 2023\SEMESTER IV\TEKNOPREUNERSHIP IF-C\PLEASE\TERNAKCARE\
 |   |       |   
 |   |       +---History
 |   |       |       Index.jsx
+|   |       |       Show.jsx
 |   |       |       
 |   |       +---ManageProduct
 |   |       |       Index.jsx

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Farmer;
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
 use App\Models\Doctor;
+use App\Models\Chat;
+use App\Events\NewChatMessage;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -225,9 +227,15 @@ class ConsultationController extends Controller
 
     public function show($id)
     {
-        $consultation = Consultation::with(['doctor.user', 'chats'])
+        $consultation = Consultation::with(['doctor.user', 'chats.sender']) // Eager load chats.sender
             ->where('farmer_id', Auth::user()->farmer->id)
             ->findOrFail($id);
+
+        // Untuk halaman Show, yang juga akan menjadi halaman chat
+        $canChat = $consultation->type === 'chat' &&
+                   $consultation->status === 'approved' && // atau 'active'
+                   ($consultation->fee == 0 || $consultation->is_paid) && // Gratis atau sudah bayar
+                   !$consultation->is_completed;
 
         return Inertia::render('Farmer/Consultation/Show', [
             'consultation' => [
@@ -235,6 +243,7 @@ class ConsultationController extends Controller
                 'doctor' => [
                     'id' => $consultation->doctor->id,
                     'user' => [
+                        'id' => $consultation->doctor->user->id, // ID User dokter
                         'name' => $consultation->doctor->user->name,
                         'profile_photo_url' => $consultation->doctor->user->photo_url
                             ? asset('storage/' . $consultation->doctor->user->photo_url)
@@ -247,17 +256,75 @@ class ConsultationController extends Controller
                 'issue' => $consultation->issue,
                 'description' => $consultation->description,
                 'fee' => $consultation->fee,
-                'schedule' => $consultation->schedule,
+                'schedule' => $consultation->schedule, // Format di frontend jika perlu
                 'location' => $consultation->location,
-                'created_at' => $consultation->created_at,
+                'created_at' => $consultation->created_at, // Format di frontend jika perlu
                 'is_paid' => (bool) $consultation->is_paid,
-                'chats' => $consultation->chats->map(fn($chat) => [
-                    'id' => $chat->id,
-                    'sender_type' => $chat->sender_type,
-                    'message' => $chat->message,
-                    'created_at' => $chat->created_at,
-                ])
+                'is_completed' => (bool) $consultation->is_completed,
+                'can_chat' => $canChat, // Flag untuk menampilkan UI chat di frontend
+                'chats' => $consultation->chats->map(function ($chat) {
+                    return [
+                        'id' => $chat->id,
+                        'message' => $chat->message,
+                        'sender_id' => $chat->sender_id,
+                        'sender_type' => $chat->sender_type,
+                        'created_at' => $chat->created_at->toIso8601String(),
+                        'created_at_formatted' => $chat->created_at->format('d M Y H:i'),
+                        // 'sender_name' => $chat->sender->name, // Opsional
+                    ];
+                })
             ]
         ]);
     }
+
+    // Method untuk farmer mengirim pesan
+    public function sendMessage(Request $request, Consultation $consultation)
+    {
+        if ($consultation->farmer_id !== Auth::user()->farmer->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($consultation->type !== 'chat' || !in_array($consultation->status, ['approved', 'active'])) {
+             return back()->with('error', 'Tidak dapat mengirim pesan. Konsultasi belum disetujui atau bukan tipe chat.');
+        }
+
+        if ($consultation->fee > 0 && !$consultation->is_paid) {
+            return back()->with('error', 'Anda belum menyelesaikan pembayaran untuk konsultasi ini.');
+        }
+
+         if ($consultation->is_completed) {
+            return back()->with('error', 'Konsultasi sudah selesai.');
+        }
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $chat = Chat::create([
+            'consultation_id' => $consultation->id,
+            'sender_type' => 'farmer', // Tipe pengirim adalah farmer
+            'sender_id' => Auth::id(),   // ID User farmer yang sedang login
+            'message' => $validated['message'],
+        ]);
+
+        $chat->load('sender');
+        broadcast(new NewChatMessage($chat, $consultation))->toOthers();
+
+        return back()->with('message', 'Pesan terkirim!');
+    }
+
+    // Jika Anda memiliki route `farmer.consultations.chat` yang mengarah ke method `chat()`
+    // dan itu berbeda dari `show()`, Anda bisa membuat method `chat()` di sini.
+    // Namun, lebih sederhana jika halaman `Show.jsx` juga berfungsi sebagai halaman chat.
+    // Jika demikian, route `farmer.consultations.chat` bisa saja tidak diperlukan atau
+    // bisa juga mengarah ke method `show()` ini.
+    //
+    // public function chat($id)
+    // {
+    //     // Logika mirip dengan show(), mungkin dengan view/props berbeda
+    //     // ...
+    //     // return Inertia::render('Farmer/Consultation/ChatPage', [...]);
+    // }
+    // ...
 }
+

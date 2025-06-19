@@ -32,7 +32,7 @@ const ManageProducts = ({ auth, products, filters, categories }) => {
 
     const handleDeleteProduct = async (productId) => {
         if (window.confirm("Apakah Anda yakin ingin menghapus produk ini?")) {
-            router.delete(route('shop.manage-products.destroy', productId), {
+            router.delete(route('shop.products.destroy', productId), { // <-- PERBAIKAN DI SINI
                 onSuccess: () => {
                     showAlert("success", "Produk berhasil dihapus");
                 },
@@ -44,7 +44,7 @@ const ManageProducts = ({ auth, products, filters, categories }) => {
     };
 
     const handleToggleStatus = (product) => {
-        router.post(route('shop.manage-products.toggle-active', product.id), {
+        router.post(route('shop.products.toggle-active', product.id), { // <-- PERBAIKAN DI SINI
             _method: 'put'  // Menggunakan _method untuk mengirim sebagai PUT
         }, {
             onSuccess: () => {
@@ -59,7 +59,7 @@ const ManageProducts = ({ auth, products, filters, categories }) => {
     const handleSubmit = async (formData) => {
         if (currentProduct) {
             // Update existing product
-            router.post(route('shop.manage-products.update', currentProduct.id), {
+            router.post(route('shop.products.update', currentProduct.id), { // <-- PERBAIKAN DI SINI
                 ...formData,
                 _method: 'put'
             }, {
@@ -73,7 +73,7 @@ const ManageProducts = ({ auth, products, filters, categories }) => {
             });
         } else {
             // Add new product
-            router.post(route('shop.manage-products.store'), formData, {
+            router.post(route('shop.products.store'), formData, { // <-- PERBAIKAN DI SINI
                 onSuccess: () => {
                     setShowModal(false);
                     showAlert("success", "Produk berhasil ditambahkan");
@@ -96,7 +96,7 @@ const ManageProducts = ({ auth, products, filters, categories }) => {
     const handleFilterChange = (newFilter) => {
         setFilter(newFilter);
         router.get(
-            route('shop.manage-products.index'),
+            route('shop.manage-products.index'), // <-- Ini sudah benar
             { ...filters, is_active: newFilter === "all" ? undefined : newFilter },
             { preserveState: true }
         );

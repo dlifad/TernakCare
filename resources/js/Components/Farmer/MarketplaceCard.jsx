@@ -31,7 +31,7 @@ export default function MarketplaceCard({ product }) {
     };
 
     return (
-        <Link href={route("farmer.marketplace.product", product.id)}>
+        <Link href={route("farmer.marketplace.product.show", product.id)}>
             <div className="bg-white rounded-lg shadow-card overflow-hidden transition-all duration-200 hover:shadow-lg h-full flex flex-col">
                 <div className="relative w-full pb-[75%]">
                     <img

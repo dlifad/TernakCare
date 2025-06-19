@@ -63,7 +63,7 @@ export default function CartPage({ cartItems, itemsByShop, subtotal }) {
                 Tambahkan beberapa produk ternak untuk memulai.
             </p>
             <Link
-                href={route("farmer.marketplace")}
+                href={route("farmer.marketplace.index")}
                 className="bg-primary hover:bg-primary-dark text-white rounded-lg px-6 py-2 transition duration-200"
             >
                 Jelajahi Produk
@@ -125,7 +125,7 @@ export default function CartPage({ cartItems, itemsByShop, subtotal }) {
                                     <div className="flex-grow sm:ml-6 mb-4 sm:mb-0">
                                         <Link
                                             href={route(
-                                                "farmer.marketplace.product",
+                                                "farmer.marketplace.product.show",
                                                 item.product.id,
                                             )}
                                             className="font-medium text-neutral-darkest hover:text-primary"

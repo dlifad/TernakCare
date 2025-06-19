@@ -1,4 +1,3 @@
-import { Inertia } from '@inertiajs/inertia';
 import React, { useState, useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 import Button from "@/Components/Common/Button";
@@ -7,7 +6,6 @@ import InputError from "@/Components/Common/InputError";
 const ProductForm = ({ product, onCancel, categories }) => {
     const [imagePreview, setImagePreview] = useState(null);
 
-    // Initialize form with Inertia
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: product?.name || "",
         description: product?.description || "",
@@ -29,27 +27,23 @@ const ProductForm = ({ product, onCancel, categories }) => {
             });
 
             if (product.image) {
-                // Assume this is a URL to the image
                 setImagePreview(`/storage/${product.image}`);
             }
+        } else {
+            reset();
+            setImagePreview(null);
         }
     }, [product]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setData({
-            ...data,
-            [name]: value
-        });
+        setData(name, value);
     };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setData({
-                ...data,
-                image: file
-            });
+            setData("image", file);
             
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -62,46 +56,26 @@ const ProductForm = ({ product, onCancel, categories }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        const formData = new FormData();
-        formData.append("name", data.name);
-        formData.append("description", data.description);
-        formData.append("price", data.price);
-        formData.append("stock", data.stock);
-        formData.append("category", data.category);
-
-        // Hanya kirim image jika ada file baru
-        if (data.image instanceof File) {
-            formData.append("image", data.image);
-        }
-
         if (product) {
-            // PUT dengan FormData manual
-            Inertia.post(
-                route("shop.manage-products.update", product.id),
-                formData,
-                {
-                    method: "post", // tetap method POST
-                    headers: {
-                        "X-HTTP-Method-Override": "PUT", // Laravel akan membaca sebagai PUT
-                    },
-                    onSuccess: () => {
-                        reset();
-                        if (onCancel) onCancel();
-                    },
-                }
-            );
-        } else {
-            post(route("shop.manage-products.store"), {
-                data: formData,
-                forceFormData: true, // gunakan ini jika pakai inertia@1.0+
+            put(route("shop.products.update", product.id), { 
                 onSuccess: () => {
-                    reset();
                     if (onCancel) onCancel();
+                },
+                onError: (errors) => {
+                    console.error("Error updating product:", errors);
+                },
+            });
+        } else {
+            post(route("shop.products.store"), {
+                onSuccess: () => {
+                    if (onCancel) onCancel();
+                },
+                onError: (errors) => {
+                    console.error("Error adding product:", errors);
                 },
             });
         }
     };
-
 
     const removeImage = () => {
         setData(prev => ({ ...prev, image: null, remove_image: true }));
@@ -109,12 +83,7 @@ const ProductForm = ({ product, onCancel, categories }) => {
     };
 
     return (
-        <form
-            onSubmit={handleSubmit}
-            className="m-10"
-            encType="multipart/form-data"
-        >
-            {/* Product Image */}
+        <form onSubmit={handleSubmit} className="m-10">
             <div className="mb-6">
                 <label className="block text-sm font-medium text-neutral-dark mb-2">
                     Foto Produk
@@ -214,7 +183,6 @@ const ProductForm = ({ product, onCancel, categories }) => {
                 )}
             </div>
 
-            {/* Product Name */}
             <div className="mb-4">
                 <label
                     htmlFor="name"
@@ -236,7 +204,6 @@ const ProductForm = ({ product, onCancel, categories }) => {
                 )}
             </div>
 
-            {/* Product Description */}
             <div className="mb-4">
                 <label
                     htmlFor="description"
@@ -258,7 +225,6 @@ const ProductForm = ({ product, onCancel, categories }) => {
                 )}
             </div>
 
-            {/* Price and Stock */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label
@@ -303,7 +269,6 @@ const ProductForm = ({ product, onCancel, categories }) => {
                 </div>
             </div>
 
-            {/* Category */}
             <div className="mb-6">
                 <label
                     htmlFor="category"
@@ -328,7 +293,6 @@ const ProductForm = ({ product, onCancel, categories }) => {
                 )}
             </div>
 
-            {/* Form Actions */}
             <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-lighter">
                 <Button
                     type="button"

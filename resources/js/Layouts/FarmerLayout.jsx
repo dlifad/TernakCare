@@ -28,7 +28,7 @@ const NavigationItem = ({ item, onClick }) => (
             item.current
                 ? "text-primary bg-primary-light"
                 : "text-neutral-dark hover:text-primary hover:bg-primary-light/30",
-            item.mobile ? "text-base" : "text-sm"
+            item.mobile ? "text-base" : "text-sm",
         )}
     >
         <item.icon className="mr-1.5 h-5 w-5" />
@@ -68,7 +68,7 @@ const NotificationPanel = ({ notifications, onClose }) => {
                                     href="#"
                                     className={classNames(
                                         "block px-4 py-2 hover:bg-neutral-lightest",
-                                        n.read && "opacity-70"
+                                        n.read && "opacity-70",
                                     )}
                                 >
                                     <p className="text-sm text-neutral-darkest">
@@ -138,26 +138,26 @@ const ProfileDropdown = ({ user, dropdownOpen, toggleDropdown }) => {
                     {user?.name}
                 </span>
             </button>
-                {dropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-card py-1 z-20">
-                        <Link
-                            href={route("farmer.profile")}
-                            className="flex items-center px-4 py-2 text-sm text-neutral-darkest hover:bg-neutral-lightest"
-                        >
-                            <User size={16} className="mr-2" />
-                            Profil
-                        </Link>
-                        <Link
-                            href={route("logout")}
-                            method="post"
-                            as="button"
-                            className="flex items-center w-full text-left px-4 py-2 text-sm text-neutral-darkest hover:bg-neutral-lightest"
-                        >
-                            <LogOut size={16} className="mr-2" />
-                            Keluar
-                        </Link>
-                    </div>
-                )}
+            {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-card py-1 z-20">
+                    <Link
+                        href={route("farmer.profile.edit")}
+                        className="flex items-center px-4 py-2 text-sm text-neutral-darkest hover:bg-neutral-lightest"
+                    >
+                        <User size={16} className="mr-2" />
+                        Profil
+                    </Link>
+                    <Link
+                        href={route("logout")}
+                        method="post"
+                        as="button"
+                        className="flex items-center w-full text-left px-4 py-2 text-sm text-neutral-darkest hover:bg-neutral-lightest"
+                    >
+                        <LogOut size={16} className="mr-2" />
+                        Keluar
+                    </Link>
+                </div>
+            )}
         </div>
     );
 };
@@ -166,13 +166,14 @@ export default function FarmerLayout({ user, children, cartCount }) {
     const { url } = usePage();
     // Mengambil data cartCount dari props Inertia (shared data)
     const { cartCount: sharedCartCount } = usePage().props;
-    
+
     // Menggunakan prioritas:
     // 1. Jika cartCount dari props komponen tersedia, gunakan itu (untuk halaman Cart)
     // 2. Jika tidak, gunakan cartCount dari shared data (untuk halaman lain)
     // 3. Default ke 0 jika keduanya tidak tersedia
-    const finalCartCount = cartCount !== undefined ? cartCount : (sharedCartCount || 0);
-    
+    const finalCartCount =
+        cartCount !== undefined ? cartCount : sharedCartCount || 0;
+
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -192,22 +193,37 @@ export default function FarmerLayout({ user, children, cartCount }) {
         },
         {
             name: "Pasar Ternak",
-            href: route("farmer.marketplace"),
+            href: route("farmer.marketplace.index"),
             icon: ShoppingBag,
-            current: url.startsWith(route("farmer.marketplace")),
+            current: url.startsWith(route("farmer.marketplace.index")),
         },
         {
             name: "Info Ternak",
-            href: route("farmer.articles"),
+            href: route("farmer.articles.index"),
             icon: BookOpen,
-            current: url.startsWith(route("farmer.articles")),
+            current: url.startsWith(route("farmer.articles.index")),
         },
     ];
 
     const notifications = [
-        { id: 1, text: "Konsultasi Disetujui - Dokter Ani", time: "30 menit yang lalu", read: false },
-        { id: 2, text: "Pesanan #12345 sedang dalam perjalanan", time: "2 jam yang lalu", read: false },
-        { id: 3, text: "Artikel baru telah ditambahkan", time: "1 hari yang lalu", read: true },
+        {
+            id: 1,
+            text: "Konsultasi Disetujui - Dokter Ani",
+            time: "30 menit yang lalu",
+            read: false,
+        },
+        {
+            id: 2,
+            text: "Pesanan #12345 sedang dalam perjalanan",
+            time: "2 jam yang lalu",
+            read: false,
+        },
+        {
+            id: 3,
+            text: "Artikel baru telah ditambahkan",
+            time: "1 hari yang lalu",
+            read: true,
+        },
     ];
 
     return (
@@ -215,8 +231,13 @@ export default function FarmerLayout({ user, children, cartCount }) {
             <header className="bg-white shadow-soft sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
-                        <Link href={route("farmer.home")} className="flex items-center">
-                            <span className="ml-2 text-xl font-heading font-bold text-primary">TernakCare</span>
+                        <Link
+                            href={route("farmer.home")}
+                            className="flex items-center"
+                        >
+                            <span className="ml-2 text-xl font-heading font-bold text-primary">
+                                TernakCare
+                            </span>
                         </Link>
 
                         <div className="hidden md:flex items-center space-x-4">
@@ -228,7 +249,7 @@ export default function FarmerLayout({ user, children, cartCount }) {
                         <div className="flex items-center">
                             {/* Gunakan finalCartCount untuk memastikan konsistensi jumlah item di semua halaman */}
                             <CartButton cartCount={finalCartCount} />
-                            
+
                             {notificationsOpen && (
                                 <NotificationPanel
                                     notifications={notifications}
@@ -236,7 +257,9 @@ export default function FarmerLayout({ user, children, cartCount }) {
                                 />
                             )}
                             <button
-                                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                                onClick={() =>
+                                    setNotificationsOpen(!notificationsOpen)
+                                }
                                 className="md:block hidden"
                             >
                                 <Bell className="h-6 w-6 mx-4 text-neutral-dark hover:text-primary" />
@@ -245,15 +268,23 @@ export default function FarmerLayout({ user, children, cartCount }) {
                             <ProfileDropdown
                                 user={user}
                                 dropdownOpen={dropdownOpen}
-                                toggleDropdown={() => setDropdownOpen(!dropdownOpen)}
+                                toggleDropdown={() =>
+                                    setDropdownOpen(!dropdownOpen)
+                                }
                             />
 
                             <div className="ml-3 md:hidden">
                                 <button
-                                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                    onClick={() =>
+                                        setMobileMenuOpen(!mobileMenuOpen)
+                                    }
                                     className="p-2 rounded-md text-neutral-dark hover:text-primary focus:outline-none"
                                 >
-                                    {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                                    {mobileMenuOpen ? (
+                                        <X className="h-6 w-6" />
+                                    ) : (
+                                        <Menu className="h-6 w-6" />
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -263,7 +294,11 @@ export default function FarmerLayout({ user, children, cartCount }) {
                 {mobileMenuOpen && (
                     <div className="md:hidden px-2 pt-2 pb-3 space-y-1">
                         {navigationItems.map((item) => (
-                            <NavigationItem key={item.name} item={{ ...item, mobile: true }} onClick={() => setMobileMenuOpen(false)} />
+                            <NavigationItem
+                                key={item.name}
+                                item={{ ...item, mobile: true }}
+                                onClick={() => setMobileMenuOpen(false)}
+                            />
                         ))}
                         <Link
                             href={route("logout")}

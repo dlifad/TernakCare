@@ -66,7 +66,7 @@ const Product = ({ product, relatedProducts }) => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Breadcrumb */}
                 <nav className="flex text-sm text-gray-500 mb-6">
-                    <Link href={route('farmer.marketplace')} className="hover:text-primary-dark">
+                    <Link href={route('farmer.marketplace.index')} className="hover:text-primary-dark">
                         Marketplace
                     </Link>
                     <span className="mx-2">/</span>

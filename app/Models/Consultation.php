@@ -62,4 +62,16 @@ class Consultation extends Model
     {
         return $this->hasMany(Chat::class);
     }
+
+    // Helper untuk mendapatkan user dari farmer
+    public function getFarmerUserAttribute()
+    {
+        return $this->farmer ? $this->farmer->user : null;
+    }
+
+    // Helper untuk mendapatkan user dari doctor
+    public function getDoctorUserAttribute()
+    {
+        return $this->doctor ? $this->doctor->user : null;
+    }
 }

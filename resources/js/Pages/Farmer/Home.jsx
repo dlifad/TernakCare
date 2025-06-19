@@ -38,7 +38,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Link>
                         <Link
-                            href={route("farmer.marketplace")}
+                            href={route('farmer.marketplace.index')}
                             className="inline-flex items-center px-5 py-3 bg-white hover:bg-neutral-lightest text-primary border border-primary rounded-lg transition duration-300 font-medium"
                         >
                             Jelajahi Pasar Ternak
@@ -120,7 +120,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                     </Link>
 
                     <Link
-                        href={route("farmer.marketplace")}
+                        href={route('farmer.marketplace.index')}
                         className="flex flex-col items-center bg-white p-5 rounded-xl shadow-card hover:shadow-lg transition-shadow duration-300"
                     >
                         <div className="bg-secondary-light p-3 rounded-full mb-3">
@@ -135,7 +135,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                     </Link>
 
                     <Link
-                        href={route("farmer.articles")}
+                        href={route('farmer.articles.index')}
                         className="flex flex-col items-center bg-white p-5 rounded-xl shadow-card hover:shadow-lg transition-shadow duration-300"
                     >
                         <div className="bg-accent-light p-3 rounded-full mb-3">
@@ -150,7 +150,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                     </Link>
 
                     <Link
-                        href={route("farmer.activity")}
+                        href={route('farmer.activity.index')}
                         className="flex flex-col items-center bg-white p-5 rounded-xl shadow-card hover:shadow-lg transition-shadow duration-300"
                     >
                         <div className="bg-neutral-light p-3 rounded-full mb-3">
@@ -173,7 +173,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                         Artikel Unggulan
                     </h2>
                     <Link
-                        href={route("farmer.articles")}
+                        href={route("farmer.articles.index")}
                         className="text-primary hover:text-primary-dark text-sm font-medium flex items-center"
                     >
                         Lihat Semua <ArrowRight className="ml-1 h-4 w-4" />
@@ -201,7 +201,7 @@ export default function Home({ auth, featuredArticles, featuredProducts }) {
                         Produk Rekomendasi
                     </h2>
                     <Link
-                        href={route("farmer.marketplace")}
+                        href={route("farmer.marketplace.index")}
                         className="text-primary hover:text-primary-dark text-sm font-medium flex items-center"
                     >
                         Lihat Semua <ArrowRight className="ml-1 h-4 w-4" />

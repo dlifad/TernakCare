@@ -9,41 +9,29 @@ class Chat extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'consultation_id',
-        'sender_type',
-        'sender_id',
+        'sender_type', // 'doctor' atau 'farmer'
+        'sender_id',   // Ini adalah ID dari tabel 'users'
         'message',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * Get the consultation that owns the chat
-     */
     public function consultation()
     {
         return $this->belongsTo(Consultation::class);
     }
 
     /**
-     * Get the sender user
+     * Get the sender of the message (User model).
      */
     public function sender()
     {
+        // sender_id adalah foreign key ke tabel users
         return $this->belongsTo(User::class, 'sender_id');
     }
 }

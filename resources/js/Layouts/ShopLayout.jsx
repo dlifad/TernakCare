@@ -24,9 +24,9 @@ export default function ShopLayout({ children, user }) {
         },
         {
             name: "Kelola Produk",
-            href: "/shop/manageproduct",
+            href: route("shop.manage-products.index"),
             icon: Package,
-            current: window.location.pathname === "/shop/manageproduct",
+            current: route().current("shop.manage-products.index"),
         },
         {
             name: "Transaksi",
